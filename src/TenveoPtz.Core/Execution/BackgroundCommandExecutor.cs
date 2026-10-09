@@ -94,8 +94,21 @@ public sealed class BackgroundCommandExecutor : ICommandExecutor
             }
             catch (Exception ex)
             {
-                Faulted?.Invoke(this, new ErrorEventArgs(ex));
+                ReportFault(ex);
             }
+        }
+    }
+
+    /// <summary>Reports a failure; a throwing subscriber must not kill the worker thread.</summary>
+    private void ReportFault(Exception exception)
+    {
+        try
+        {
+            Faulted?.Invoke(this, new ErrorEventArgs(exception));
+        }
+        catch (Exception)
+        {
+            // Nothing sensible left to do: keep processing the queue.
         }
     }
 
