@@ -52,18 +52,22 @@ internal sealed class ConnectionBar : UserControl
         };
         connect.Click += (_, _) => (connected ? DisconnectRequested : ConnectRequested)?.Invoke(this, EventArgs.Empty);
 
-        serialSettings = Row(ports, baudRates, addresses);
-        serialSettings.Margin = new Padding(0);
-        var selection = Row(devices, mode, serialSettings);
+        // Rows never wrap: a wrapping row inside an auto-sized table reserves extra height.
+        var selection = Row(devices, mode);
         var actions = Row(refresh, pin, connect);
-        actions.WrapContents = false;
         actions.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        serialSettings = Row(ports, baudRates, addresses);
+        serialSettings.Margin = new Padding(0, 4, 0, 0);
 
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 1 };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 2 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.Controls.Add(selection, 0, 0);
         layout.Controls.Add(actions, 1, 0);
+        layout.Controls.Add(serialSettings, 0, 1);
+        layout.SetColumnSpan(serialSettings, 2);
 
         var card = new Card { Dock = DockStyle.Fill, AutoSize = true, Padding = new Padding(10) };
         card.Controls.Add(layout);
@@ -128,7 +132,7 @@ internal sealed class ConnectionBar : UserControl
 
     private static FlowLayoutPanel Row(params Control[] controls)
     {
-        var row = new FlowLayoutPanel { AutoSize = true, WrapContents = true, Margin = new Padding(0) };
+        var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
         row.Controls.AddRange(controls);
         return row;
     }
