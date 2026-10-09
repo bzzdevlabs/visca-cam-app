@@ -5,6 +5,7 @@ using TenveoPtz.App.Infrastructure.DirectShow;
 using TenveoPtz.App.Infrastructure.Serial;
 using TenveoPtz.App.Infrastructure.Timing;
 using TenveoPtz.App.Views;
+using TenveoPtz.App.Views.Theming;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Session;
@@ -19,12 +20,13 @@ internal static class Program
     private const string DataFolderName = "TenveoPTZ";
 
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Application.ThreadException += (_, e) => ShowFatal(e.Exception);
 
+        Theme.Initialize(ParseTheme(args));
         var dataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), DataFolderName);
 
         using var form = new MainForm();
@@ -39,6 +41,21 @@ internal static class Program
             new XmlFileStore<PresetBook>(Path.Combine(dataFolder, "presets.xml")));
 
         Application.Run(form);
+    }
+
+    /// <summary>Reads <c>--theme=light|dark</c> (used for screenshots); defaults to the Windows setting.</summary>
+    private static ThemeMode ParseTheme(string[] args)
+    {
+        foreach (var arg in args)
+        {
+            if (arg.StartsWith("--theme=", StringComparison.OrdinalIgnoreCase)
+                && Enum.TryParse<ThemeMode>(arg.Substring("--theme=".Length), ignoreCase: true, out var mode))
+            {
+                return mode;
+            }
+        }
+
+        return ThemeMode.System;
     }
 
     private static void ShowFatal(Exception exception) =>

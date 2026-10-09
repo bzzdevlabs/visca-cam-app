@@ -1,40 +1,46 @@
 using System;
+using System.Drawing;
 using System.Windows.Forms;
+using TenveoPtz.App.Views.Theming;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Ptz;
 
 namespace TenveoPtz.App.Views.Controls;
 
-/// <summary>Zoom and focus controls (hold to adjust).</summary>
+/// <summary>"Zoom and focus" card (hold the buttons to adjust).</summary>
 internal sealed class LensPanel : UserControl
 {
-    private readonly CheckBox autoFocus;
-    private readonly HoldButton focusNear;
-    private readonly HoldButton focusFar;
+    private readonly ToggleSwitch autoFocus = new("Autofocus") { Checked = true, Anchor = AnchorStyles.Left };
+    private readonly FluentButton focusNear;
+    private readonly FluentButton focusFar;
 
     public LensPanel(ToolTip toolTips)
     {
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
-        var grid = UiFactory.Grid(3, 2);
-        grid.Dock = DockStyle.Top;
-        grid.ColumnStyles[0] = new ColumnStyle(SizeType.AutoSize);
-
-        grid.Controls.Add(UiFactory.Label("Zoom"), 0, 0);
-        grid.Controls.Add(Hold("−", "Zoom out (- or Page Down)", toolTips, Motion.Negative, RaiseZoom), 1, 0);
-        grid.Controls.Add(Hold("+", "Zoom in (+ or Page Up)", toolTips, Motion.Positive, RaiseZoom), 2, 0);
-
-        autoFocus = new CheckBox { Text = "Auto focus", Checked = true, AutoSize = true, Anchor = AnchorStyles.Left };
+        var zoomOut = Hold(Glyphs.ZoomOut, string.Empty, "Zoom out (hold, or - / Page Down)", toolTips, Motion.Negative, RaiseZoom);
+        var zoomIn = Hold(Glyphs.ZoomIn, string.Empty, "Zoom in (hold, or + / Page Up)", toolTips, Motion.Positive, RaiseZoom);
+        focusNear = Hold(null, "Near", "Focus nearer (hold)", toolTips, Motion.Negative, RaiseFocus);
+        focusFar = Hold(null, "Far", "Focus farther (hold)", toolTips, Motion.Positive, RaiseFocus);
         autoFocus.CheckedChanged += (_, _) => OnAutoFocusChanged();
-        focusNear = Hold("Near", "Focus nearer", toolTips, Motion.Negative, RaiseFocus);
-        focusFar = Hold("Far", "Focus farther", toolTips, Motion.Positive, RaiseFocus);
-        grid.Controls.Add(autoFocus, 0, 1);
-        grid.Controls.Add(focusNear, 1, 1);
-        grid.Controls.Add(focusFar, 2, 1);
 
-        Controls.Add(grid);
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 3, RowCount = 2 };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        layout.Controls.Add(new Label { Text = "Zoom", AutoSize = true, Anchor = AnchorStyles.Left, Font = FluentFonts.Body, ForeColor = Theme.Current.TextSecondary }, 0, 0);
+        layout.Controls.Add(zoomOut, 1, 0);
+        layout.Controls.Add(zoomIn, 2, 0);
+        layout.Controls.Add(autoFocus, 0, 1);
+        layout.Controls.Add(focusNear, 1, 1);
+        layout.Controls.Add(focusFar, 2, 1);
+
+        var card = new Card("Zoom and focus") { Dock = DockStyle.Fill, AutoSize = true };
+        card.Controls.Add(layout);
+        Controls.Add(card);
         UpdateFocusButtons();
+        Theme.Changed += OnThemeChanged;
     }
 
     public event EventHandler<MotionEventArgs>? ZoomRequested;
@@ -43,11 +49,22 @@ internal sealed class LensPanel : UserControl
 
     public event EventHandler<ToggleEventArgs>? AutoFocusRequested;
 
-    private static HoldButton Hold(string text, string toolTip, ToolTip toolTips, Motion direction, Action<Motion> raise)
+    protected override void Dispose(bool disposing)
     {
-        var button = UiFactory.HoldButton(text, toolTip, toolTips);
+        if (disposing)
+        {
+            Theme.Changed -= OnThemeChanged;
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private static FluentButton Hold(string? glyph, string text, string toolTip, ToolTip toolTips, Motion direction, Action<Motion> raise)
+    {
+        var button = new FluentButton(text, glyph) { AutoSize = false, Size = new Size(56, 32), TabStop = false };
         button.Pressed += (_, _) => raise(direction);
         button.Released += (_, _) => raise(Motion.None);
+        toolTips.SetToolTip(button, toolTip);
         return button;
     }
 
@@ -66,4 +83,6 @@ internal sealed class LensPanel : UserControl
         focusNear.Enabled = !autoFocus.Checked;
         focusFar.Enabled = !autoFocus.Checked;
     }
+
+    private void OnThemeChanged(object? sender, EventArgs e) => ThemedLabels.Refresh(this);
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using TenveoPtz.App.Views.Theming;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Settings;
@@ -56,7 +57,7 @@ internal sealed partial class MainForm : Form, IMainView
     public event EventHandler<PresetMoveEventArgs>? MovePresetRequested;
 
     /// <summary>Area hosting the DirectShow video window.</summary>
-    public Control VideoHost => videoHost;
+    public Control VideoHost => videoSurface;
 
     public ConnectionOptions ConnectionOptions
     {
@@ -66,8 +67,8 @@ internal sealed partial class MainForm : Form, IMainView
 
     public double Speed
     {
-        get => ptzPad.Speed;
-        set => ptzPad.Speed = value;
+        get => movePanel.Speed;
+        set => movePanel.Speed = value;
     }
 
     public bool AlwaysOnTop
@@ -83,21 +84,35 @@ internal sealed partial class MainForm : Form, IMainView
     public void ShowConnected(bool connected)
     {
         connectionBar.ShowConnected(connected);
-        noVideoLabel.Visible = !connected;
+        videoSurface.ShowPlaceholder = !connected;
     }
 
     public void ShowPresets(IReadOnlyList<Preset> presets, Preset? selected) => presetPanel.ShowPresets(presets, selected);
 
-    public void ShowStatus(string message, bool isError)
+    public void ShowStatus(string message, bool isError) => statusLine.Show(message, isError);
+
+    public string? PromptText(string title, string prompt, string initialValue) => FluentDialog.Prompt(this, title, prompt, initialValue);
+
+    public bool Confirm(string message) => FluentDialog.Confirm(this, "Are you sure?", message, "Yes");
+
+    protected override void OnHandleCreated(EventArgs e)
     {
-        statusLabel.Text = message;
-        statusLabel.ForeColor = isError ? System.Drawing.Color.Firebrick : System.Drawing.SystemColors.ControlText;
+        base.OnHandleCreated(e);
+        WindowChrome.Apply(this, Theme.Current);
+        Theme.StartWatching();
     }
 
-    public string? PromptText(string title, string prompt, string initialValue) => InputDialog.Ask(this, title, prompt, initialValue);
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            Theme.Changed -= OnThemeChanged;
+            Theme.StopWatching();
+            toolTips.Dispose();
+        }
 
-    public bool Confirm(string message) =>
-        MessageBox.Show(this, message, Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK;
+        base.Dispose(disposing);
+    }
 
     protected override void OnLoad(EventArgs e)
     {
@@ -121,8 +136,8 @@ internal sealed partial class MainForm : Form, IMainView
         connectionBar.DisconnectRequested += (_, e) => DisconnectRequested?.Invoke(this, e);
         connectionBar.AlwaysOnTopChanged += (_, _) => TopMost = connectionBar.AlwaysOnTop;
 
-        ptzPad.PanTiltRequested += (_, e) => PanTiltRequested?.Invoke(this, e);
-        ptzPad.HomeRequested += (_, e) => HomeRequested?.Invoke(this, e);
+        movePanel.PanTiltRequested += (_, e) => PanTiltRequested?.Invoke(this, e);
+        movePanel.HomeRequested += (_, e) => HomeRequested?.Invoke(this, e);
         lensPanel.ZoomRequested += (_, e) => ZoomRequested?.Invoke(this, e);
         lensPanel.FocusRequested += (_, e) => FocusRequested?.Invoke(this, e);
         lensPanel.AutoFocusRequested += (_, e) => AutoFocusRequested?.Invoke(this, e);

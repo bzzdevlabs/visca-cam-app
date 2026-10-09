@@ -1,36 +1,43 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using TenveoPtz.App.Views.Theming;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Presets;
 
 namespace TenveoPtz.App.Views.Controls;
 
-/// <summary>Preset list with its actions. Double-click or Enter recalls a preset; 1..9 are hotkeys.</summary>
+/// <summary>"Presets" card: toolbar and list. Double-click or Enter recalls; 1..9 are hotkeys.</summary>
 internal sealed class PresetPanel : UserControl
 {
-    private const int HotkeyCount = 9;
-
-    private readonly ListBox list;
+    private readonly PresetListBox list = new()
+    {
+        Dock = DockStyle.Fill,
+        EmptyText = "No presets yet. Frame a shot, then select \"Save new\".",
+    };
 
     public PresetPanel(ToolTip toolTips)
     {
-        list = new ListBox { Dock = DockStyle.Fill, IntegralHeight = false, Height = 150, FormattingEnabled = true };
-        list.Format += OnFormatItem;
         list.DoubleClick += (_, _) => RaiseForSelection(RecallRequested);
         list.KeyDown += OnListKeyDown;
 
-        var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, WrapContents = true };
-        buttons.Controls.Add(Action("Go", "Move the camera to the selected preset (double-click)", toolTips, () => RaiseForSelection(RecallRequested)));
-        buttons.Controls.Add(Action("Save new", "Save the current camera position as a new preset", toolTips, () => AddRequested?.Invoke(this, EventArgs.Empty)));
-        buttons.Controls.Add(Action("Update", "Replace the selected preset with the current position", toolTips, () => RaiseForSelection(OverwriteRequested)));
-        buttons.Controls.Add(Action("Rename", "Rename the selected preset", toolTips, () => RaiseForSelection(RenameRequested)));
-        buttons.Controls.Add(Action("Delete", "Delete the selected preset", toolTips, () => RaiseForSelection(DeleteRequested)));
-        buttons.Controls.Add(Action("▲", "Move up (changes its hotkey)", toolTips, () => RaiseMove(-1)));
-        buttons.Controls.Add(Action("▼", "Move down (changes its hotkey)", toolTips, () => RaiseMove(1)));
+        var add = new FluentButton("Save new", Glyphs.Add, ButtonAppearance.Accent);
+        toolTips.SetToolTip(add, "Save the current camera position as a new preset");
+        add.Click += (_, _) => AddRequested?.Invoke(this, EventArgs.Empty);
 
-        Controls.Add(list);
-        Controls.Add(buttons);
+        var toolbar = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = false, Margin = new Padding(0), Padding = new Padding(0, 0, 0, 8) };
+        toolbar.Controls.Add(add);
+        toolbar.Controls.Add(Tool(Glyphs.Play, "Go to the selected preset (double-click, Enter or 1-9)", toolTips, () => RaiseForSelection(RecallRequested)));
+        toolbar.Controls.Add(Tool(Glyphs.Save, "Replace the selected preset with the current position", toolTips, () => RaiseForSelection(OverwriteRequested)));
+        toolbar.Controls.Add(Tool(Glyphs.Rename, "Rename the selected preset", toolTips, () => RaiseForSelection(RenameRequested)));
+        toolbar.Controls.Add(Tool(Glyphs.Delete, "Delete the selected preset", toolTips, () => RaiseForSelection(DeleteRequested)));
+        toolbar.Controls.Add(Tool(Glyphs.MoveUp, "Move up (changes its number key)", toolTips, () => RaiseMove(-1)));
+        toolbar.Controls.Add(Tool(Glyphs.MoveDown, "Move down (changes its number key)", toolTips, () => RaiseMove(1)));
+
+        var card = new Card("Presets") { Dock = DockStyle.Fill };
+        card.Controls.Add(list);
+        card.Controls.Add(toolbar);
+        Controls.Add(card);
     }
 
     public event EventHandler? AddRequested;
@@ -56,20 +63,15 @@ internal sealed class PresetPanel : UserControl
 
         list.SelectedItem = selected;
         list.EndUpdate();
+        list.Invalidate();
     }
 
-    private static Button Action(string text, string toolTip, ToolTip toolTips, Action onClick)
+    private static FluentButton Tool(string glyph, string toolTip, ToolTip toolTips, Action onClick)
     {
-        var button = UiFactory.Button(text, toolTip, toolTips);
+        var button = new FluentButton(string.Empty, glyph, ButtonAppearance.Subtle);
         button.Click += (_, _) => onClick();
+        toolTips.SetToolTip(button, toolTip);
         return button;
-    }
-
-    private void OnFormatItem(object? sender, ListControlConvertEventArgs e)
-    {
-        var index = list.Items.IndexOf(e.ListItem);
-        var prefix = index >= 0 && index < HotkeyCount ? $"{index + 1}.  " : "     ";
-        e.Value = prefix + e.ListItem;
     }
 
     private void OnListKeyDown(object? sender, KeyEventArgs e)
