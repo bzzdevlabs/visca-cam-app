@@ -8,6 +8,7 @@
     <AssemblyName>TenveoPTZ</AssemblyName>
     <AssemblyTitle>Tenveo PTZ Controller</AssemblyTitle>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 

@@ -29,6 +29,7 @@ internal sealed partial class MainForm
         AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
         Text = "Tenveo PTZ";
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         Font = FluentFonts.Body;
         ClientSize = new Size(1120, 760);
         MinimumSize = new Size(960, 700);

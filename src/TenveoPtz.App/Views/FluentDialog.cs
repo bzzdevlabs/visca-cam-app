@@ -22,6 +22,7 @@ internal sealed class FluentDialog : Form
         MinimizeBox = false;
         MaximizeBox = false;
         ShowInTaskbar = false;
+        ShowIcon = false;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         BackColor = Theme.Current.Surface;
