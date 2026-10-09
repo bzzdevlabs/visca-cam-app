@@ -85,6 +85,11 @@ internal sealed class FluentDialog : Form
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
+        if (e.KeyCode == Keys.Enter && ActiveControl is FluentButton)
+        {
+            return; // A focused button handles Enter itself: Enter on Cancel must cancel.
+        }
+
         if (e.KeyCode == Keys.Enter)
         {
             CloseWith(DialogResult.OK);
