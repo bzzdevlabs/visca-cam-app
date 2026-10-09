@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- .NET Framework 4.8 ships with Windows 10 (1903+) and 11: nothing to install on the target PC. -->
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>TenveoPtz.App</RootNamespace>
+    <AssemblyName>TenveoPTZ</AssemblyName>
+    <AssemblyTitle>Tenveo PTZ Controller</AssemblyTitle>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TenveoPtz.Core\TenveoPtz.Core.csproj" />
+  </ItemGroup>
+
+</Project>
