@@ -14,7 +14,11 @@ public sealed class ViscaCommand
 
     private readonly byte[] payload;
 
-    public ViscaCommand(string name, IReadOnlyList<byte> payload, TimeSpan? timeout = null)
+    /// <param name="waitForCompletion">
+    /// <c>false</c> for continuous moves: the camera only sends their completion once the motion
+    /// ends, so waiting for it would delay the following stop command.
+    /// </param>
+    public ViscaCommand(string name, IReadOnlyList<byte> payload, TimeSpan? timeout = null, bool waitForCompletion = true)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -34,12 +38,16 @@ public sealed class ViscaCommand
         }
 
         Timeout = timeout ?? DefaultTimeout;
+        WaitForCompletion = waitForCompletion;
     }
 
     public string Name { get; }
 
     /// <summary>How long to wait for the camera's completion message.</summary>
     public TimeSpan Timeout { get; }
+
+    /// <summary>Whether to wait for the completion message, or return once the camera acknowledges.</summary>
+    public bool WaitForCompletion { get; }
 
     public IReadOnlyList<byte> Payload => payload;
 

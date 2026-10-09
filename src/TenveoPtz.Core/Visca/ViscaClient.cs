@@ -31,7 +31,8 @@ public sealed class ViscaClient : IDisposable
     public int Address { get; }
 
     /// <summary>
-    /// Sends <paramref name="command"/> and waits for its completion.
+    /// Sends <paramref name="command"/> and waits for its completion (or only its acknowledgement,
+    /// see <see cref="ViscaCommand.WaitForCompletion"/>).
     /// Returns <c>false</c> when the camera does not confirm in time (some models never reply).
     /// </summary>
     /// <exception cref="ViscaException">The camera rejected the command.</exception>
@@ -62,7 +63,12 @@ public sealed class ViscaClient : IDisposable
             switch (message[1] & 0xF0)
             {
                 case 0x40: // ACK: command accepted, completion follows.
-                    continue;
+                    if (command.WaitForCompletion)
+                    {
+                        continue;
+                    }
+
+                    return true;
                 case 0x50: // Completion.
                     return true;
                 case 0x60:
