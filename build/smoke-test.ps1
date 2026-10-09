@@ -17,37 +17,35 @@ param(
 
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
-Add-Type -TypeDefinition @"
-using System;
-using System.Drawing;
-using System.Runtime.InteropServices;
-
-public static class WindowCapture
-{
+# Win32 calls only: System.Drawing types are used from PowerShell so the snippet compiles on
+# both Windows PowerShell 5.1 and PowerShell 7 (where Bitmap lives in System.Drawing.Common).
+Add-Type -Namespace Win32 -Name Window -MemberDefinition @"
     [StructLayout(LayoutKind.Sequential)]
-    private struct Rect { public int Left, Top, Right, Bottom; }
+    public struct Rect { public int Left, Top, Right, Bottom; }
 
-    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out Rect rect);
-    [DllImport("user32.dll")] private static extern bool PrintWindow(IntPtr window, IntPtr dc, uint flags);
-    [DllImport("user32.dll")] private static extern bool SetProcessDPIAware();
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window, out Rect rect);
+    [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr window, IntPtr dc, uint flags);
+    [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+"@
 
-    // PW_RENDERFULLCONTENT captures the window even when other windows cover it.
-    public static Bitmap Capture(IntPtr window)
-    {
-        SetProcessDPIAware();
-        Rect rect;
-        GetWindowRect(window, out rect);
-        var bitmap = new Bitmap(rect.Right - rect.Left, rect.Bottom - rect.Top);
-        using (var graphics = Graphics.FromImage(bitmap))
-        {
-            var dc = graphics.GetHdc();
-            PrintWindow(window, dc, 2);
-            graphics.ReleaseHdc(dc);
-        }
-        return bitmap;
+function Save-WindowImage([IntPtr] $Window, [string] $Path) {
+    [void][Win32.Window]::SetProcessDPIAware()
+    $rect = New-Object Win32.Window+Rect
+    [void][Win32.Window]::GetWindowRect($Window, [ref] $rect)
+    $bitmap = New-Object System.Drawing.Bitmap ($rect.Right - $rect.Left), ($rect.Bottom - $rect.Top)
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    try {
+        $dc = $graphics.GetHdc()
+        # PW_RENDERFULLCONTENT (2) captures the window even when other windows cover it.
+        [void][Win32.Window]::PrintWindow($Window, $dc, 2)
+        $graphics.ReleaseHdc($dc)
+        $bitmap.Save($Path, [System.Drawing.Imaging.ImageFormat]::Png)
+    }
+    finally {
+        $graphics.Dispose()
+        $bitmap.Dispose()
     }
 }
-"@ -ReferencedAssemblies System.Drawing
 
 if ($SamplePresets) {
     $dataFolder = Join-Path $env:APPDATA "TenveoPTZ"
@@ -85,9 +83,7 @@ foreach ($theme in $Themes) {
         if ($ScreenshotDir) {
             New-Item -ItemType Directory -Force $ScreenshotDir | Out-Null
             $path = Join-Path $ScreenshotDir "screenshot-$theme.png"
-            $bitmap = [WindowCapture]::Capture($process.MainWindowHandle)
-            $bitmap.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
-            $bitmap.Dispose()
+            Save-WindowImage $process.MainWindowHandle $path
             Write-Host "[$theme] Screenshot saved to $path"
         }
 
