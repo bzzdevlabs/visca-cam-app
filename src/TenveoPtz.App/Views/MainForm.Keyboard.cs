@@ -8,7 +8,7 @@ namespace TenveoPtz.App.Views;
 
 /// <summary>
 /// Keyboard shortcuts: arrows pan/tilt (hold, combinable for diagonals), +/- or Page Up/Down zoom,
-/// Home recentres, 1..9 recall presets. Ignored while typing in an input field.
+/// Home recentres, 1..9 recall presets. Ignored while an input field or list has focus.
 /// </summary>
 internal sealed partial class MainForm
 {
@@ -17,7 +17,7 @@ internal sealed partial class MainForm
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
-        if (IsTypingTarget(ActiveControl) || (keyData & (Keys.Control | Keys.Alt)) != 0)
+        if (IsKeyboardTarget(FocusedLeaf()) || (keyData & (Keys.Control | Keys.Alt)) != 0)
         {
             return base.ProcessCmdKey(ref msg, keyData);
         }
@@ -92,8 +92,21 @@ internal sealed partial class MainForm
         }
     }
 
-    private static bool IsTypingTarget(Control? control) =>
-        control is TextBoxBase || control is ComboBox || control is NumericUpDown || control is UpDownBase;
+    /// <summary>Controls that need the arrow and digit keys themselves.</summary>
+    private static bool IsKeyboardTarget(Control? control) =>
+        control is TextBoxBase || control is ComboBox || control is UpDownBase || control is ListBox;
+
+    /// <summary>The focused control, looking inside nested containers (ActiveControl stops at the form's direct child).</summary>
+    private Control? FocusedLeaf()
+    {
+        Control? control = ActiveControl;
+        while (control is ContainerControl { ActiveControl: { } inner })
+        {
+            control = inner;
+        }
+
+        return control;
+    }
 
     private static bool IsArrow(Keys key) => key is Keys.Left or Keys.Right or Keys.Up or Keys.Down;
 
