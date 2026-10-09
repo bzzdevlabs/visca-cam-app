@@ -59,6 +59,9 @@ internal abstract class FluentControl : Control
         base.OnMouseDown(e);
         if (e.Button == MouseButtons.Left)
         {
+            // Capture so the release is seen even outside the control: a hold-to-move
+            // button must always report its release, or the camera would keep moving.
+            Capture = true;
             IsPressed = true;
             Invalidate();
         }
@@ -69,6 +72,7 @@ internal abstract class FluentControl : Control
         base.OnMouseUp(e);
         if (e.Button == MouseButtons.Left)
         {
+            Capture = false;
             IsPressed = false;
             Invalidate();
         }
