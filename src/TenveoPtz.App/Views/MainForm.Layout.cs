@@ -31,7 +31,7 @@ internal sealed partial class MainForm
         Text = "Tenveo PTZ";
         Font = FluentFonts.Body;
         ClientSize = new Size(1120, 760);
-        MinimumSize = new Size(960, 720);
+        MinimumSize = new Size(960, 700);
         StartPosition = FormStartPosition.CenterScreen;
         Padding = new Padding(Gap, Gap, Gap, 4);
         KeyPreview = true;

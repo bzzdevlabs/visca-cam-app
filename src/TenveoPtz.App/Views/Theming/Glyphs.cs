@@ -20,7 +20,7 @@ internal static class Glyphs
     public const string Pinned = "\uE840";
     public const string Camera = "\uE722";
     public const string Video = "\uE714";
-    public const string Connect = "\uE703";
+    public const string Connect = "\uE71B";
     public const string Stop = "\uE71A";
     public const string Info = "\uE946";
     public const string Error = "\uEA39";
