@@ -13,7 +13,7 @@ internal sealed class PresetPanel : UserControl
     private readonly PresetListBox list = new()
     {
         Dock = DockStyle.Fill,
-        EmptyText = "No presets yet. Frame a shot, then select \"Save new\".",
+        EmptyText = "No presets yet. Frame a shot, then select \"New\".",
     };
 
     public PresetPanel(ToolTip toolTips)
@@ -21,7 +21,7 @@ internal sealed class PresetPanel : UserControl
         list.DoubleClick += (_, _) => RaiseForSelection(RecallRequested);
         list.KeyDown += OnListKeyDown;
 
-        var add = new FluentButton("Save new", Glyphs.Add, ButtonAppearance.Accent);
+        var add = new FluentButton("New", Glyphs.Add, ButtonAppearance.Accent);
         toolTips.SetToolTip(add, "Save the current camera position as a new preset");
         add.Click += (_, _) => AddRequested?.Invoke(this, EventArgs.Empty);
 
