@@ -30,7 +30,7 @@ jobs:
       release: ${{ steps.version.outputs.release }}
       artifact: TenveoPTZ-${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Tags and full history are needed to compute the version.
 
@@ -43,7 +43,7 @@ jobs:
           echo "$output" >> "$GITHUB_OUTPUT"
           echo "**Version:** $(sed -n 's/^version=//p' <<<"$output")" >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
@@ -74,7 +74,7 @@ jobs:
           Copy-Item "$bin/TenveoPTZ.exe", "$bin/TenveoPTZ.exe.config", "$bin/TenveoPtz.Core.dll", README.md -Destination dist/TenveoPTZ
 
       - name: Upload application
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: TenveoPTZ-${{ steps.version.outputs.version }}
           path: dist/TenveoPTZ/
@@ -83,7 +83,7 @@ jobs:
       # Transport to the screenshots job only; the images are shown on the run page.
       - name: Hand over screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: screenshots
           path: dist/screenshots/
@@ -100,11 +100,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           sparse-checkout: build
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: screenshots
