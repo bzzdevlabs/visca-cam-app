@@ -32,7 +32,7 @@ jobs:
     env:
       VERSION: ${{ needs.build.outputs.version }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ${{ needs.build.outputs.artifact }}
           path: TenveoPTZ
