@@ -38,8 +38,12 @@ public sealed class XmlFileStore<T> : IStore<T>
         }
         catch (InvalidOperationException)
         {
-            File.Copy(path, path + ".corrupt", overwrite: true);
+            KeepCorruptCopy();
             return new T();
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+        {
+            return new T(); // Unreadable (locked or no permission): start with defaults rather than fail.
         }
     }
 
@@ -69,6 +73,18 @@ public sealed class XmlFileStore<T> : IStore<T>
         else
         {
             File.Move(temp, path);
+        }
+    }
+
+    private void KeepCorruptCopy()
+    {
+        try
+        {
+            File.Copy(path, path + ".corrupt", overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+        {
+            // Best effort: the defaults are still usable without the backup.
         }
     }
 }
