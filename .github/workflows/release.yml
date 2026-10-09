@@ -1,8 +1,9 @@
 name: Release
 
-# Runs when a pull request is merged (push to main). The version comes from the Conventional
-# Commits since the last tag: feat bumps minor, fix/perf bump patch, breaking changes bump major.
-# Merges containing only docs, ci, chore, test... are built and tested but not released.
+# Runs when a pull request is merged (push to main). The build computes the version
+# major.minor.patch.build from the Conventional Commits since the last tag (feat: minor,
+# fix/perf: patch, breaking: major) and the commit count. Merges containing only docs, ci,
+# chore, test... are built and tested but not released.
 on:
   push:
     branches: [main]
@@ -16,36 +17,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  version:
-    runs-on: ubuntu-latest
-    outputs:
-      next: ${{ steps.next.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Compute next version
-        id: next
-        run: |
-          version="$(bash build/next-version.sh)"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Next version: ${version:-none (no releasable commits)}"
-
   build:
-    needs: version
     uses: ./.github/workflows/build.yml
-    with:
-      version: ${{ needs.version.outputs.next || format('0.0.{0}', github.run_number) }}
 
   publish:
-    needs: [version, build]
-    if: needs.version.outputs.next != ''
+    needs: build
+    if: needs.build.outputs.release == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     env:
-      VERSION: ${{ needs.version.outputs.next }}
+      VERSION: ${{ needs.build.outputs.version }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -62,5 +44,5 @@ jobs:
           gh release create "v$VERSION" "TenveoPTZ-$VERSION.zip"
           --repo "$GITHUB_REPOSITORY"
           --target "$GITHUB_SHA"
-          --title "Tenveo PTZ v$VERSION"
+          --title "Tenveo PTZ $VERSION"
           --generate-notes

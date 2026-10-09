@@ -73,12 +73,13 @@ The app is written to `src/TenveoPtz.App/bin/Release/net48/`.
 
 - **CI** (`ci.yml`): every pull request is built, unit-tested and smoke-tested on Windows
   (the app is started and its window checked; a screenshot is kept as an artifact).
-- **Release** (`release.yml`): merging into `main` computes the next version from the
-  [Conventional Commits](https://www.conventionalcommits.org/) since the last tag
-  (`feat` bumps the minor version, `fix`/`perf` the patch, a breaking change the major), then
-  tags it and publishes a GitHub release with the zipped app. Merges with only `docs`, `ci`,
-  `chore` or `test` commits are tested but not released. Run `build/next-version.sh` to preview
-  the next version locally.
+- **Release** (`release.yml`): merging into `main` publishes a GitHub release with the zipped app.
+- **Versioning**: `major.minor.patch.build`, as Windows file versions. `major.minor.patch` comes
+  from the [Conventional Commits](https://www.conventionalcommits.org/) since the last tag
+  (`feat` bumps the minor version, `fix`/`perf` the patch, a breaking change the major); `build`
+  is the number of commits in the history, so it grows with every change and a rebuild of the
+  same commit gets the same number. Merges with only `docs`, `ci`, `chore` or `test` commits are
+  tested but not released. Run `build/version.sh` to see the current version locally.
 
 ### Architecture
 
