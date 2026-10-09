@@ -20,14 +20,21 @@ if (( ${#images[@]} == 0 )); then
   exit 0
 fi
 
-if git clone --quiet --depth 1 --branch "$branch" "$remote" "$work" 2>/dev/null; then
+# Exit code 2 means "no such branch"; anything else (network, permissions) is a real error.
+status=0
+git ls-remote --exit-code --heads "$remote" "$branch" > /dev/null || status=$?
+if (( status == 0 )); then
+  git clone --quiet --depth 1 --branch "$branch" "$remote" "$work"
   cd "$work"
-else
+elif (( status == 2 )); then
   cd "$work"
   git init --quiet
   git checkout --quiet --orphan "$branch"
   git remote add origin "$remote"
   echo "Screenshots taken by CI runs. Generated content, safe to delete." > README.md
+else
+  echo "Could not reach the $branch branch (git ls-remote exit code $status)." >&2
+  exit 1
 fi
 
 git config user.name "github-actions[bot]"
@@ -44,11 +51,22 @@ fi
 git add --all
 git commit --quiet -m "chore: screenshots of run $run"
 
+# Another run may push at the same time: rebase onto it and retry.
+pushed=false
 for attempt in 1 2 3; do
-  git push --quiet origin "HEAD:$branch" && break
-  git pull --quiet --rebase origin "$branch" || true
-  if (( attempt == 3 )); then echo "Could not push screenshots." >&2; exit 1; fi
+  if git push --quiet origin "HEAD:$branch"; then
+    pushed=true
+    break
+  fi
+  if ! git pull --quiet --rebase origin "$branch"; then
+    git rebase --abort || true
+    break
+  fi
 done
+if [[ "$pushed" != true ]]; then
+  echo "Could not push the screenshots to $branch." >&2
+  exit 1
+fi
 
 {
   echo "## Screenshots"
