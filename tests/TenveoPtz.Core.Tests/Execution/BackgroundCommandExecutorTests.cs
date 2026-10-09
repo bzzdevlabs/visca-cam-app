@@ -60,6 +60,20 @@ public sealed class BackgroundCommandExecutorTests
     }
 
     [Fact]
+    public void ThrowingFaultHandler_DoesNotStopTheWorker()
+    {
+        var ranAfterFailure = false;
+        var executor = new BackgroundCommandExecutor("test");
+        executor.Faulted += (_, _) => throw new InvalidOperationException("handler bug");
+
+        executor.Post(() => throw new IOException("port closed"));
+        executor.Post(() => ranAfterFailure = true);
+        executor.Dispose();
+
+        Assert.True(ranAfterFailure);
+    }
+
+    [Fact]
     public void Post_AfterDisposeThrows()
     {
         var executor = new BackgroundCommandExecutor("test");
