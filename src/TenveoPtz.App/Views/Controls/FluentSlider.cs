@@ -5,7 +5,7 @@ using TenveoPtz.App.Views.Theming;
 
 namespace TenveoPtz.App.Views.Controls;
 
-/// <summary>Windows 11 slider: accent-filled rail and a round thumb. Drag or use the mouse wheel.</summary>
+/// <summary>Windows 11 slider: accent-filled rail and a round thumb. Drag, use the mouse wheel or the keyboard.</summary>
 internal sealed class FluentSlider : FluentControl
 {
     private const float RailHeight = 4F;
@@ -21,7 +21,6 @@ internal sealed class FluentSlider : FluentControl
         this.maximum = maximum;
         this.value = value;
         Size = new Size(160, 32);
-        TabStop = false;
         Cursor = Cursors.Hand;
     }
 
@@ -62,6 +61,11 @@ internal sealed class FluentSlider : FluentControl
         graphics.FillRounded(Enabled ? Colors.Accent : Colors.TextDisabled, new RectangleF(RailLeft, middle - (rail / 2), thumbX - RailLeft, rail), rail / 2);
 
         var thumb = new PointF(thumbX, middle);
+        if (Focused && ShowFocusCues)
+        {
+            graphics.DrawCircle(Colors.Text, thumb, Px(ThumbRadius + 3), Px(2));
+        }
+
         graphics.FillCircle(Colors.ControlFill, thumb, Px(ThumbRadius));
         graphics.DrawCircle(Colors.ControlBorder, thumb, Px(ThumbRadius));
         var inner = IsPressed ? 5F : IsHovered ? 7F : 6F;
@@ -83,6 +87,30 @@ internal sealed class FluentSlider : FluentControl
         if (IsPressed)
         {
             SetFromX(e.X);
+        }
+    }
+
+    protected override bool IsInputKey(Keys keyData) =>
+        (keyData & Keys.KeyCode) is Keys.Left or Keys.Right or Keys.Up or Keys.Down || base.IsInputKey(keyData);
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        var step = Math.Max(1, (maximum - minimum) / 10);
+        int? target = e.KeyCode switch
+        {
+            Keys.Left or Keys.Down => value - 1,
+            Keys.Right or Keys.Up => value + 1,
+            Keys.PageDown => value - step,
+            Keys.PageUp => value + step,
+            Keys.Home => minimum,
+            Keys.End => maximum,
+            _ => null,
+        };
+        if (target.HasValue)
+        {
+            Value = target.Value;
+            e.Handled = true;
         }
     }
 
