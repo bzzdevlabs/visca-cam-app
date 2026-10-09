@@ -4,8 +4,9 @@
     a screenshot of the window, then closes it. Runs once per theme. Used by CI; also handy on a
     test PC.
 .PARAMETER SamplePresets
-    Writes a few sample presets to %APPDATA%\TenveoPTZ first so the screenshots show a filled
-    list. Do not use it on a PC whose presets matter.
+    Writes sample presets and settings to %APPDATA%\TenveoPTZ first so the screenshots show a
+    filled list; the light run uses USB (UVC) control and the dark run serial (VISCA) control,
+    so both header layouts are covered. Do not use it on a PC whose settings matter.
 #>
 param(
     [Parameter(Mandatory = $true)] [string] $Exe,
@@ -62,7 +63,19 @@ if ($SamplePresets) {
 "@ | Set-Content -Encoding UTF8 (Join-Path $dataFolder "presets.xml")
 }
 
+$sampleModes = @{ light = "Uvc"; dark = "Visca" }
+
 foreach ($theme in $Themes) {
+    if ($SamplePresets -and $sampleModes.ContainsKey($theme)) {
+        @"
+<?xml version="1.0" encoding="utf-8"?>
+<AppSettings>
+  <Connection><Mode>$($sampleModes[$theme])</Mode><BaudRate>9600</BaudRate><Address>1</Address></Connection>
+  <Speed>0.5</Speed>
+</AppSettings>
+"@ | Set-Content -Encoding UTF8 (Join-Path $env:APPDATA "TenveoPTZ\settings.xml")
+    }
+
     $process = Start-Process -FilePath (Resolve-Path $Exe) -ArgumentList "--theme=$theme" -PassThru
     try {
         $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
