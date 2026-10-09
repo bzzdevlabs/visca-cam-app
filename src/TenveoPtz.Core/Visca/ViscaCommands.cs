@@ -38,7 +38,8 @@ public static class ViscaCommands
                 (byte)Clamp(panSpeed, MinPanSpeed, MaxPanSpeed),
                 (byte)Clamp(tiltSpeed, MinTiltSpeed, MaxTiltSpeed),
                 panByte, tiltByte,
-            });
+            },
+            waitForCompletion: false);
     }
 
     public static ViscaCommand Home() => new("Home", new byte[] { 0x01, 0x06, 0x04 });
@@ -52,7 +53,7 @@ public static class ViscaCommands
             Motion.Negative => (byte)(0x30 | p),
             _ => (byte)0x00,
         };
-        return new ViscaCommand("Zoom", new byte[] { 0x01, 0x04, 0x07, argument });
+        return new ViscaCommand("Zoom", new byte[] { 0x01, 0x04, 0x07, argument }, waitForCompletion: false);
     }
 
     public static ViscaCommand Focus(Motion direction)
@@ -63,7 +64,7 @@ public static class ViscaCommands
             Motion.Negative => (byte)0x03,
             _ => (byte)0x00,
         };
-        return new ViscaCommand("Focus", new byte[] { 0x01, 0x04, 0x08, argument });
+        return new ViscaCommand("Focus", new byte[] { 0x01, 0x04, 0x08, argument }, waitForCompletion: false);
     }
 
     public static ViscaCommand AutoFocus(bool enabled) =>

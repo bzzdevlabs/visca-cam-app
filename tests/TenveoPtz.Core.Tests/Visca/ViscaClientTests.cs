@@ -1,3 +1,4 @@
+using TenveoPtz.Core.Ptz;
 using TenveoPtz.Core.Tests.Fakes;
 using TenveoPtz.Core.Visca;
 
@@ -24,6 +25,15 @@ public sealed class ViscaClientTests
         var client = new ViscaClient(transport, 1);
 
         Assert.True(client.Execute(ViscaCommands.Home()));
+    }
+
+    [Fact]
+    public void Execute_ContinuousMoveReturnsOnAcknowledge()
+    {
+        transport.QueueReply(0x90, 0x41, 0xFF);
+        var client = new ViscaClient(transport, 1);
+
+        Assert.True(client.Execute(ViscaCommands.PanTiltDrive(Motion.Positive, Motion.None, 1, 1)));
     }
 
     [Fact]
