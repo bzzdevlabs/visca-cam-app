@@ -5,7 +5,7 @@
 # Environment: GH_TOKEN, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_STEP_SUMMARY.
 set -euo pipefail
 
-source_dir="$1"
+source_dir="$(cd "$1" && pwd)" # Absolute: the script changes directory before copying.
 branch="ci-screenshots"
 keep="${KEEP:-30}"
 run="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}"
@@ -36,7 +36,11 @@ git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 mkdir -p "runs/$run"
 cp "${images[@]}" "runs/$run/"
 # Keep only the newest runs (run ids grow over time).
-ls -1 runs | sort -t- -k1,1n -k2,2n | head -n "-$keep" | while read -r old; do git rm -r --quiet "runs/$old"; done
+runs=$(ls -1 runs | sort -t- -k1,1n -k2,2n)
+excess=$(( $(wc -l <<<"$runs") - keep ))
+if (( excess > 0 )); then
+  head -n "$excess" <<<"$runs" | while read -r old; do git rm -r --quiet "runs/$old"; done
+fi
 git add --all
 git commit --quiet -m "chore: screenshots of run $run"
 
