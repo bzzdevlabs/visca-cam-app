@@ -1,0 +1,75 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Compute version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}".TrimStart("v") }
+          else { $v = "0.0.${{ github.run_number }}" }
+          "value=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.value }}
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=results.trx"
+
+      - name: Smoke test (start the app and check its window)
+        shell: pwsh
+        run: ./build/smoke-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe -Screenshot dist/screenshot.png
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $out = "dist/TenveoPTZ"
+          New-Item -ItemType Directory -Force $out | Out-Null
+          Copy-Item src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe, src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe.config, src/TenveoPtz.App/bin/Release/net48/TenveoPtz.Core.dll, README.md -Destination $out
+          Compress-Archive -Path "$out/*" -DestinationPath "dist/TenveoPTZ-${{ steps.version.outputs.value }}.zip" -Force
+
+      - name: Upload application
+        uses: actions/upload-artifact@v4
+        with:
+          name: TenveoPTZ-${{ steps.version.outputs.value }}
+          path: dist/TenveoPTZ/
+
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot
+          path: dist/screenshot.png
+          if-no-files-found: ignore
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" "dist/TenveoPTZ-${{ steps.version.outputs.value }}.zip" --title "Tenveo PTZ ${{ github.ref_name }}" --generate-notes
