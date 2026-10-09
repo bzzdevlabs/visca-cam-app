@@ -17,7 +17,7 @@ internal sealed class MovePanel : UserControl
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
-        var pad = new DirectionPad { Anchor = AnchorStyles.None, Margin = new Padding(0, 0, 0, 12) };
+        var pad = new DirectionPad { Anchor = AnchorStyles.None, Margin = new Padding(0, 0, 0, 4) };
         pad.PanTiltRequested += (_, e) => PanTiltRequested?.Invoke(this, e);
         pad.HomeRequested += (_, e) => HomeRequested?.Invoke(this, e);
         toolTips.SetToolTip(pad, "Hold a direction to move (or use the arrow keys). Centre: home position.");

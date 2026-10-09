@@ -9,8 +9,8 @@ namespace TenveoPtz.App.Views.Controls;
 internal sealed class Card : Panel
 {
     private const float CornerRadius = 8F;
-    private const int Inset = 16;
-    private const int TitleHeight = 36;
+    private const int Inset = 14;
+    private const int TitleHeight = 30;
 
     private readonly string? title;
 

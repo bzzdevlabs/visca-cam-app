@@ -56,7 +56,8 @@ internal sealed class ConnectionBar : UserControl
         serialSettings.Margin = new Padding(0);
         var selection = Row(devices, mode, serialSettings);
         var actions = Row(refresh, pin, connect);
-        actions.Anchor = AnchorStyles.Right;
+        actions.WrapContents = false;
+        actions.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 1 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));

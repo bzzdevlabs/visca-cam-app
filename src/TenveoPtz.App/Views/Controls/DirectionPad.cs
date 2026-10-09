@@ -34,7 +34,7 @@ internal sealed class DirectionPad : FluentControl
 
     public DirectionPad()
     {
-        Size = new Size(168, 168);
+        Size = new Size(144, 144);
         TabStop = false;
         Cursor = Cursors.Hand;
     }
@@ -67,6 +67,7 @@ internal sealed class DirectionPad : FluentControl
 
         graphics.DrawCircle(Colors.ControlBorder, middle, outer);
 
+        // Chevrons for the four axes, small dots for the diagonals (a rotated chevron reads as a corner).
         var ring = (outer + inner) / 2F;
         for (var sector = 0; sector < Sectors.Length; sector++)
         {
@@ -75,8 +76,14 @@ internal sealed class DirectionPad : FluentControl
                 middle.X + (float)(Math.Cos(angle * Math.PI / 180) * ring),
                 middle.Y - (float)(Math.Sin(angle * Math.PI / 180) * ring));
             var color = sector == pressed ? Colors.OnAccent : Enabled ? Colors.Text : Colors.TextDisabled;
-            var size = sector % 2 == 0 ? 16F : 12F;
-            graphics.DrawGlyph(Glyphs.ChevronRight, FluentFonts.Icon(size), color, position, (float)-angle);
+            if (sector % 2 == 0)
+            {
+                graphics.DrawGlyph(Glyphs.ChevronRight, FluentFonts.Icon(14), color, position, (float)-angle);
+            }
+            else
+            {
+                graphics.FillCircle(color, position, Px(2));
+            }
         }
 
         var centreFill = pressed == Centre ? Colors.ControlFillPressed : hovered == Centre ? Colors.ControlFillHover : Colors.Surface;
