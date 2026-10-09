@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using TenveoPtz.App.Views.Controls;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Ptz;
 
@@ -94,7 +95,7 @@ internal sealed partial class MainForm
 
     /// <summary>Controls that need the arrow and digit keys themselves.</summary>
     private static bool IsKeyboardTarget(Control? control) =>
-        control is TextBoxBase || control is ComboBox || control is UpDownBase || control is ListBox;
+        control is TextBoxBase || control is ComboBox || control is UpDownBase || control is ListBox || control is FluentSlider;
 
     /// <summary>The focused control, looking inside nested containers (ActiveControl stops at the form's direct child).</summary>
     private Control? FocusedLeaf()
