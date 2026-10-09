@@ -17,6 +17,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+if ($ScreenshotDir) {
+    # .NET resolves relative paths against the process directory, not the PowerShell location.
+    $ScreenshotDir = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ScreenshotDir)
+}
+
 Add-Type -AssemblyName System.Drawing
 # Win32 calls only: System.Drawing types are used from PowerShell so the snippet compiles on
 # both Windows PowerShell 5.1 and PowerShell 7 (where Bitmap lives in System.Drawing.Common).
