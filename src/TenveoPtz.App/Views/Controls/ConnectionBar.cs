@@ -2,23 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using TenveoPtz.App.Views.Theming;
 using TenveoPtz.Core.Settings;
 using TenveoPtz.Core.Video;
 
 namespace TenveoPtz.App.Views.Controls;
 
-/// <summary>Device selection and connect/disconnect toolbar.</summary>
+/// <summary>Header bar: camera and control selection, serial settings (VISCA only), refresh, pin and connect.</summary>
 internal sealed class ConnectionBar : UserControl
 {
     private static readonly int[] BaudRates = { 2400, 4800, 9600, 19200, 38400, 57600, 115200 };
 
-    private readonly ComboBox devices = DropDown(220);
-    private readonly ComboBox mode = DropDown(130);
-    private readonly ComboBox ports = DropDown(80);
-    private readonly ComboBox baudRates = DropDown(75);
-    private readonly NumericUpDown address = new() { Minimum = 1, Maximum = 7, Value = 1, Width = 40 };
-    private readonly Button connect;
-    private readonly CheckBox alwaysOnTop = new() { Text = "On top", AutoSize = true, Margin = new Padding(8, 6, 2, 2) };
+    private readonly DropDownSelector devices = new(260, "No camera found", Glyphs.Camera);
+    private readonly DropDownSelector mode = new(190, "Control");
+    private readonly DropDownSelector ports = new(120, "No COM port");
+    private readonly DropDownSelector baudRates = new(120, "Baud rate");
+    private readonly DropDownSelector addresses = new(120, "Address");
+    private readonly FlowLayoutPanel serialSettings;
+    private readonly FluentButton connect = new("Connect", Glyphs.Connect, ButtonAppearance.Accent);
+    private readonly FluentButton pin = new(string.Empty, Glyphs.Pin, ButtonAppearance.Subtle);
     private bool connected;
 
     public ConnectionBar(ToolTip toolTips)
@@ -26,34 +28,46 @@ internal sealed class ConnectionBar : UserControl
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
-        mode.Items.AddRange(new object[] { new ModeItem(ControlMode.Uvc, "UVC (USB)"), new ModeItem(ControlMode.Visca, "VISCA (COM port)") });
-        mode.SelectedIndex = 0;
-        mode.SelectedIndexChanged += (_, _) => UpdateViscaFields();
-        baudRates.Items.AddRange(BaudRates.Cast<object>().ToArray());
-        baudRates.SelectedItem = ConnectionOptions.DefaultBaudRate;
+        mode.SetItems(new object[] { new Choice<ControlMode>(ControlMode.Uvc, "USB control (UVC)"), new Choice<ControlMode>(ControlMode.Visca, "Serial control (VISCA)") });
+        mode.SelectedItem = mode.Items[0];
+        mode.SelectionChanged += (_, _) => UpdateSerialSettings();
+        baudRates.SetItems(BaudRates.Select(rate => (object)new Choice<int>(rate, $"{rate} baud")));
+        addresses.SetItems(Enumerable.Range(1, 7).Select(address => (object)new Choice<int>(address, $"Address {address}")));
 
         toolTips.SetToolTip(devices, "Video device used for the live preview");
-        toolTips.SetToolTip(mode, "UVC: control through the USB cable. VISCA: control through a serial (RS-232/RS-485) cable.");
+        toolTips.SetToolTip(mode, "USB: control through the camera's USB cable. Serial: VISCA through an RS-232/RS-485 cable.");
         toolTips.SetToolTip(ports, "COM port of the VISCA serial cable or adapter");
         toolTips.SetToolTip(baudRates, "VISCA baud rate (must match the camera, usually 9600)");
-        toolTips.SetToolTip(address, "VISCA camera address (usually 1)");
-        toolTips.SetToolTip(alwaysOnTop, "Keep this window above other windows");
+        toolTips.SetToolTip(addresses, "VISCA camera address (usually 1)");
+        toolTips.SetToolTip(pin, "Keep this window on top of other windows");
+        toolTips.SetToolTip(connect, "Open the video and camera control");
 
-        var refresh = UiFactory.Button("⟳", "Refresh device lists", toolTips);
+        var refresh = new FluentButton(string.Empty, Glyphs.Refresh, ButtonAppearance.Subtle);
+        toolTips.SetToolTip(refresh, "Refresh the device lists");
         refresh.Click += (_, _) => RefreshRequested?.Invoke(this, EventArgs.Empty);
-        connect = UiFactory.Button("Connect", "Open the video and camera control", toolTips);
-        connect.Click += (_, _) => (connected ? DisconnectRequested : ConnectRequested)?.Invoke(this, EventArgs.Empty);
-        alwaysOnTop.CheckedChanged += (_, _) => AlwaysOnTopChanged?.Invoke(this, EventArgs.Empty);
-
-        var row = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, WrapContents = true };
-        row.Controls.AddRange(new Control[]
+        pin.Click += (_, _) =>
         {
-            UiFactory.Label("Camera"), devices, UiFactory.Label("Control"), mode,
-            UiFactory.Label("Port"), ports, UiFactory.Label("Baud"), baudRates, UiFactory.Label("Addr"), address,
-            refresh, connect, alwaysOnTop,
-        });
-        Controls.Add(row);
-        UpdateViscaFields();
+            AlwaysOnTop = !AlwaysOnTop;
+            AlwaysOnTopChanged?.Invoke(this, EventArgs.Empty);
+        };
+        connect.Click += (_, _) => (connected ? DisconnectRequested : ConnectRequested)?.Invoke(this, EventArgs.Empty);
+
+        serialSettings = Row(ports, baudRates, addresses);
+        serialSettings.Margin = new Padding(0);
+        var selection = Row(devices, mode, serialSettings);
+        var actions = Row(refresh, pin, connect);
+        actions.Anchor = AnchorStyles.Right;
+
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 1 };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        layout.Controls.Add(selection, 0, 0);
+        layout.Controls.Add(actions, 1, 0);
+
+        var card = new Card { Dock = DockStyle.Fill, AutoSize = true, Padding = new Padding(10) };
+        card.Controls.Add(layout);
+        Controls.Add(card);
+        UpdateSerialSettings();
     }
 
     public event EventHandler? RefreshRequested;
@@ -66,8 +80,12 @@ internal sealed class ConnectionBar : UserControl
 
     public bool AlwaysOnTop
     {
-        get => alwaysOnTop.Checked;
-        set => alwaysOnTop.Checked = value;
+        get => pin.IsChecked;
+        set
+        {
+            pin.IsChecked = value;
+            pin.Glyph = value ? Glyphs.Pinned : Glyphs.Pin;
+        }
     }
 
     public ConnectionOptions Options
@@ -75,72 +93,63 @@ internal sealed class ConnectionBar : UserControl
         get => new()
         {
             VideoDeviceName = (devices.SelectedItem as VideoDevice)?.Name ?? string.Empty,
-            Mode = (mode.SelectedItem as ModeItem)?.Mode ?? ControlMode.Uvc,
+            Mode = (mode.SelectedItem as Choice<ControlMode>)?.Value ?? ControlMode.Uvc,
             PortName = ports.SelectedItem as string ?? string.Empty,
-            BaudRate = baudRates.SelectedItem as int? ?? ConnectionOptions.DefaultBaudRate,
-            Address = (int)address.Value,
+            BaudRate = (baudRates.SelectedItem as Choice<int>)?.Value ?? ConnectionOptions.DefaultBaudRate,
+            Address = (addresses.SelectedItem as Choice<int>)?.Value ?? 1,
         };
         set
         {
             devices.SelectedItem = devices.Items.OfType<VideoDevice>().FirstOrDefault(d => d.Name == value.VideoDeviceName)
-                ?? devices.Items.OfType<VideoDevice>().FirstOrDefault();
-            mode.SelectedItem = mode.Items.OfType<ModeItem>().First(m => m.Mode == value.Mode);
-            ports.SelectedItem = ports.Items.Contains(value.PortName) ? value.PortName : ports.Items.OfType<string>().FirstOrDefault();
-            baudRates.SelectedItem = BaudRates.Contains(value.BaudRate) ? value.BaudRate : ConnectionOptions.DefaultBaudRate;
-            address.Value = Math.Max(address.Minimum, Math.Min(address.Maximum, value.Address));
+                ?? devices.Items.FirstOrDefault();
+            mode.SelectedItem = Choice<ControlMode>.Find(mode, value.Mode) ?? mode.Items[0];
+            ports.SelectedItem = ports.Items.Contains(value.PortName) ? value.PortName : ports.Items.FirstOrDefault();
+            baudRates.SelectedItem = Choice<int>.Find(baudRates, value.BaudRate) ?? Choice<int>.Find(baudRates, ConnectionOptions.DefaultBaudRate);
+            addresses.SelectedItem = Choice<int>.Find(addresses, value.Address) ?? addresses.Items[0];
         }
     }
 
-    public void ShowDevices(IReadOnlyList<VideoDevice> videoDevices) => Replace(devices, videoDevices);
+    public void ShowDevices(IReadOnlyList<VideoDevice> videoDevices) => devices.SetItems(videoDevices);
 
-    public void ShowPorts(IReadOnlyList<string> portNames) => Replace(ports, portNames);
+    public void ShowPorts(IReadOnlyList<string> portNames) => ports.SetItems(portNames);
 
     public void ShowConnected(bool isConnected)
     {
         connected = isConnected;
         connect.Text = isConnected ? "Disconnect" : "Connect";
-        foreach (var input in new Control[] { devices, mode })
+        connect.Glyph = isConnected ? Glyphs.Stop : Glyphs.Connect;
+        connect.Appearance = isConnected ? ButtonAppearance.Standard : ButtonAppearance.Accent;
+        foreach (var selector in new[] { devices, mode, ports, baudRates, addresses })
         {
-            input.Enabled = !isConnected;
+            selector.Enabled = !isConnected;
         }
-
-        UpdateViscaFields();
     }
 
-    private static ComboBox DropDown(int width) =>
-        new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = width, Margin = new Padding(2, 3, 2, 2) };
-
-    private static void Replace<T>(ComboBox combo, IReadOnlyList<T> items)
+    private static FlowLayoutPanel Row(params Control[] controls)
     {
-        combo.BeginUpdate();
-        combo.Items.Clear();
-        foreach (var item in items)
+        var row = new FlowLayoutPanel { AutoSize = true, WrapContents = true, Margin = new Padding(0) };
+        row.Controls.AddRange(controls);
+        return row;
+    }
+
+    private void UpdateSerialSettings() =>
+        serialSettings.Visible = (mode.SelectedItem as Choice<ControlMode>)?.Value == ControlMode.Visca;
+
+    /// <summary>Selector item pairing a value with its label.</summary>
+    private sealed class Choice<T>
+    {
+        public Choice(T value, string label)
         {
-            combo.Items.Add(item!);
-        }
-
-        combo.EndUpdate();
-    }
-
-    private void UpdateViscaFields()
-    {
-        var visca = !connected && (mode.SelectedItem as ModeItem)?.Mode == ControlMode.Visca;
-        ports.Enabled = visca;
-        baudRates.Enabled = visca;
-        address.Enabled = visca;
-    }
-
-    private sealed class ModeItem
-    {
-        public ModeItem(ControlMode mode, string label)
-        {
-            Mode = mode;
+            Value = value;
             Label = label;
         }
 
-        public ControlMode Mode { get; }
+        public T Value { get; }
 
         public string Label { get; }
+
+        public static object? Find(DropDownSelector selector, T value) =>
+            selector.Items.OfType<Choice<T>>().FirstOrDefault(c => EqualityComparer<T>.Default.Equals(c.Value, value));
 
         public override string ToString() => Label;
     }
