@@ -43,7 +43,7 @@ jobs:
 
       - name: Smoke test (start the app and check its window)
         shell: pwsh
-        run: ./build/smoke-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe -Screenshot dist/screenshot.png
+        run: ./build/smoke-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe -ScreenshotDir dist -SamplePresets
 
       - name: Collect application files
         shell: pwsh
