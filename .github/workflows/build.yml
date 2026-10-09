@@ -1,14 +1,15 @@
 name: Build
 
-# Reusable: builds, tests and smoke-tests the app on Windows, then uploads it as an artifact.
+# Reusable: computes the version, builds, tests and smoke-tests the app on Windows, then uploads it.
 on:
   workflow_call:
-    inputs:
-      version:
-        description: Version stamped into the assemblies (major.minor.patch).
-        type: string
-        required: true
     outputs:
+      version:
+        description: Version of this build (major.minor.patch.build).
+        value: ${{ jobs.build.outputs.version }}
+      release:
+        description: Whether the commits since the last release warrant a new release.
+        value: ${{ jobs.build.outputs.release }}
       artifact:
         description: Name of the uploaded application artifact.
         value: ${{ jobs.build.outputs.artifact }}
@@ -24,9 +25,22 @@ jobs:
   build:
     runs-on: windows-latest
     outputs:
-      artifact: TenveoPTZ-${{ inputs.version }}
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
+      artifact: TenveoPTZ-${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Tags and full history are needed to compute the version.
+
+      - name: Compute version
+        id: version
+        shell: bash
+        run: |
+          output="$(bash build/version.sh)"
+          echo "$output"
+          echo "$output" >> "$GITHUB_OUTPUT"
+          echo "**Version:** $(sed -n 's/^version=//p' <<<"$output")" >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -36,7 +50,7 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore -p:Version=${{ inputs.version }}
+        run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
       - name: Test
         run: dotnet test --configuration Release --no-build
@@ -55,7 +69,7 @@ jobs:
       - name: Upload application
         uses: actions/upload-artifact@v4
         with:
-          name: TenveoPTZ-${{ inputs.version }}
+          name: TenveoPTZ-${{ steps.version.outputs.version }}
           path: dist/TenveoPTZ/
           if-no-files-found: error
 
@@ -63,6 +77,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screenshots-${{ inputs.version }}
+          name: screenshots-${{ steps.version.outputs.version }}
           path: dist/*.png
           if-no-files-found: ignore

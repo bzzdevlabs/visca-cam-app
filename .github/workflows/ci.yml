@@ -14,5 +14,3 @@ concurrency:
 jobs:
   build:
     uses: ./.github/workflows/build.yml
-    with:
-      version: 0.0.${{ github.run_number }}
