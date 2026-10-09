@@ -71,8 +71,10 @@ The app is written to `src/TenveoPtz.App/bin/Release/net48/`.
 
 ### Continuous integration and releases
 
-- **CI** (`ci.yml`): every pull request is built, unit-tested and smoke-tested on Windows
-  (the app is started and its window checked; a screenshot is kept as an artifact).
+- **CI** (`ci.yml`): every pull request is built, unit-tested and smoke-tested on Windows (the
+  app is started in the light and dark themes). The run page shows the version, a test report
+  with every test's result, and screenshots of the window (stored on the `ci-screenshots`
+  branch, which keeps the last 30 runs).
 - **Release** (`release.yml`): merging into `main` publishes a GitHub release with the zipped app.
 - **Versioning**: `major.minor.patch.build`, as Windows file versions. `major.minor.patch` comes
   from the [Conventional Commits](https://www.conventionalcommits.org/) since the last tag

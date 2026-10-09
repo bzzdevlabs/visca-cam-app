@@ -1,6 +1,7 @@
 name: Build
 
-# Reusable: computes the version, builds, tests and smoke-tests the app on Windows, then uploads it.
+# Reusable: computes the version, builds, tests and smoke-tests the app on Windows, uploads it,
+# and reports test results and screenshots on the run page (job summaries).
 on:
   workflow_call:
     outputs:
@@ -53,11 +54,17 @@ jobs:
         run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.version.outputs.version }}
 
       - name: Test
-        run: dotnet test --configuration Release --no-build
+        id: test
+        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=tests.trx" --results-directory dist/test-results
 
-      - name: Smoke test (start the app and check its window)
+      - name: Report test results
+        if: always() && (steps.test.outcome == 'success' || steps.test.outcome == 'failure')
         shell: pwsh
-        run: ./build/smoke-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe -ScreenshotDir dist -SamplePresets
+        run: ./build/test-summary.ps1 -Path dist/test-results >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Smoke test (start the app in light and dark themes)
+        shell: pwsh
+        run: ./build/smoke-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe -ScreenshotDir dist/screenshots -SamplePresets
 
       - name: Collect application files
         shell: pwsh
@@ -73,10 +80,37 @@ jobs:
           path: dist/TenveoPTZ/
           if-no-files-found: error
 
-      - name: Upload screenshots
+      # Transport to the screenshots job only; the images are shown on the run page.
+      - name: Hand over screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screenshots-${{ steps.version.outputs.version }}
-          path: dist/*.png
+          name: screenshots
+          path: dist/screenshots/
           if-no-files-found: ignore
+          retention-days: 1
+
+  screenshots:
+    needs: build
+    if: always() && needs.build.result != 'skipped'
+    runs-on: ubuntu-latest
+    # Separate job so that write access (needed to push to the ci-screenshots branch) is limited
+    # to this short script: the build job, which runs the app and its tests, stays read-only.
+    # Pull requests from forks only ever receive a read-only token, so they cannot push.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: build
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: screenshots
+          path: screenshots
+
+      - name: Show screenshots on the run page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash build/publish-screenshots.sh screenshots

@@ -19,6 +19,9 @@ concurrency:
 jobs:
   build:
     uses: ./.github/workflows/build.yml
+    # Write access is only used by the screenshots job (ci-screenshots branch).
+    permissions:
+      contents: write
 
   publish:
     needs: build
