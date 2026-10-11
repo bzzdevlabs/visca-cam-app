@@ -66,6 +66,10 @@ jobs:
         shell: pwsh
         run: ./build/smoke-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe -ScreenshotDir dist/screenshots -SamplePresets
 
+      - name: Update test (install the latest release over this build)
+        shell: pwsh
+        run: ./build/update-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe
+
       - name: Collect application files
         shell: pwsh
         run: |
