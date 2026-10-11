@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using TenveoPtz.Core.Diagnostics;
 using TenveoPtz.Core.Transport;
 
 namespace TenveoPtz.Core.Visca;
@@ -14,10 +15,12 @@ public sealed class ViscaClient : IDisposable
     private const int MaxMessageLength = 16;
 
     private readonly IByteTransport transport;
+    private readonly Logger log;
 
     /// <param name="transport">Transport to use. Ownership is transferred to the client.</param>
     /// <param name="address">Camera address, 1..7 (1 for a single camera).</param>
-    public ViscaClient(IByteTransport transport, int address)
+    /// <param name="log">Receives the bytes exchanged with the camera (debug level).</param>
+    public ViscaClient(IByteTransport transport, int address, Logger? log = null)
     {
         if (address < 1 || address > 7)
         {
@@ -26,6 +29,7 @@ public sealed class ViscaClient : IDisposable
 
         this.transport = transport ?? throw new ArgumentNullException(nameof(transport));
         Address = address;
+        this.log = log ?? Logger.Null;
     }
 
     public int Address { get; }
@@ -36,15 +40,27 @@ public sealed class ViscaClient : IDisposable
     /// Returns <c>false</c> when the camera does not confirm in time (some models never reply).
     /// </summary>
     /// <exception cref="ViscaException">The camera rejected the command.</exception>
-    public bool Execute(ViscaCommand command)
+    public bool Execute(ViscaCommand command) => Send(command) is not null;
+
+    /// <summary>
+    /// Like <see cref="Execute"/>, but returns the camera's final reply (e.g. <c>90 50 .. FF</c>,
+    /// which carries the answer to an inquiry), or <c>null</c> when the camera does not confirm in time.
+    /// </summary>
+    /// <exception cref="ViscaException">The camera rejected the command.</exception>
+    public IReadOnlyList<byte>? Send(ViscaCommand command)
     {
         if (command is null)
         {
             throw new ArgumentNullException(nameof(command));
         }
 
+        var packet = command.ToPacket(Address);
         transport.DiscardInput();
-        transport.Write(command.ToPacket(Address));
+        transport.Write(packet);
+        if (log.IsDebugEnabled)
+        {
+            log.Debug($"TX {HexBytes.Format(packet)} ({command.Name})");
+        }
 
         var clock = Stopwatch.StartNew();
         while (true)
@@ -52,7 +68,13 @@ public sealed class ViscaClient : IDisposable
             var message = ReadMessage(command.Timeout - clock.Elapsed);
             if (message is null)
             {
-                return false;
+                log.Debug($"No reply to {command.Name} within {command.Timeout.TotalMilliseconds:0} ms");
+                return null;
+            }
+
+            if (log.IsDebugEnabled)
+            {
+                log.Debug("RX " + HexBytes.Format(message));
             }
 
             if (message.Count < 3)
@@ -68,9 +90,9 @@ public sealed class ViscaClient : IDisposable
                         continue;
                     }
 
-                    return true;
+                    return message;
                 case 0x50: // Completion.
-                    return true;
+                    return message;
                 case 0x60:
                     throw new ViscaException(command.Name, message[2]);
             }

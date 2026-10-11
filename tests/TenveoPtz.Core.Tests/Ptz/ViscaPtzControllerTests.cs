@@ -1,4 +1,6 @@
 using System.IO;
+using System.Linq;
+using TenveoPtz.Core.Diagnostics;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Ptz;
 using TenveoPtz.Core.Tests.Fakes;
@@ -10,11 +12,23 @@ public sealed class ViscaPtzControllerTests
 {
     private readonly FakeTransport transport = new();
     private readonly InlineExecutor executor = new();
+    private readonly LogHub log = new(LogLevel.Info, 10);
     private readonly ViscaPtzController controller;
 
     public ViscaPtzControllerTests()
     {
-        controller = new ViscaPtzController(new ViscaClient(transport, 1), executor, "VISCA on COM3");
+        controller = new ViscaPtzController(new ViscaClient(transport, 1), executor, "VISCA on COM3", new Logger(log, "VISCA"));
+    }
+
+    [Fact]
+    public void SendRaw_WritesPacketAndLogsReply()
+    {
+        transport.QueueReply(0x90, 0x50, 0x02, 0xFF);
+
+        controller.SendRaw(new byte[] { 0x09, 0x04, 0x47 });
+
+        Assert.Equal(new byte[] { 0x81, 0x09, 0x04, 0x47, 0xFF }, Assert.Single(transport.Written));
+        Assert.Equal("Raw command 09 04 47: reply 90 50 02 FF", log.Recent().Single().Message);
     }
 
     [Fact]

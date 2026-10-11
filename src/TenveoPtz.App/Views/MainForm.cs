@@ -16,8 +16,9 @@ namespace TenveoPtz.App.Views;
 /// </summary>
 internal sealed partial class MainForm : Form, IMainView
 {
-    public MainForm()
+    public MainForm(DebugTools debugTools)
     {
+        this.debugTools = debugTools ?? throw new ArgumentNullException(nameof(debugTools));
         InitializeLayout();
         ForwardControlEvents();
     }
@@ -122,6 +123,7 @@ internal sealed partial class MainForm : Form, IMainView
             Theme.Changed -= OnThemeChanged;
             Theme.StopWatching();
             toolTips.Dispose();
+            debugConsole?.Dispose();
         }
 
         base.Dispose(disposing);
@@ -136,6 +138,11 @@ internal sealed partial class MainForm : Form, IMainView
     protected override void OnShown(EventArgs e)
     {
         base.OnShown(e);
+        if (ShowDebugConsoleOnStart)
+        {
+            ToggleDebugConsole();
+        }
+
         ViewShown?.Invoke(this, EventArgs.Empty);
     }
 

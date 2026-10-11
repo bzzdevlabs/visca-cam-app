@@ -53,6 +53,9 @@ public interface IMainView
 
     event EventHandler<PresetMoveEventArgs>? MovePresetRequested;
 
+    /// <summary>Protocol bytes typed in the hidden debug console, to send to the camera as they are.</summary>
+    event EventHandler<RawCommandEventArgs>? RawCommandRequested;
+
     ConnectionOptions ConnectionOptions { get; set; }
 
     /// <summary>Relative movement speed, 0..1.</summary>

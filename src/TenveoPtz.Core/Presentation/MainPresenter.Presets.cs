@@ -22,7 +22,7 @@ public sealed partial class MainPresenter
     {
         if (session is null)
         {
-            view.ShowStatus("Connect to the camera before saving a preset.", true);
+            ShowStatus("Connect to the camera before saving a preset.", true);
             return;
         }
 
@@ -39,7 +39,7 @@ public sealed partial class MainPresenter
         }
         catch (Exception ex) when (ex is ArgumentException || ex is InvalidOperationException)
         {
-            view.ShowStatus(ex.Message, true);
+            ShowStatus(ex.Message, true);
             return;
         }
 
@@ -57,7 +57,7 @@ public sealed partial class MainPresenter
         if (WithCamera(ptz => ptz.RecallPreset(preset)))
         {
             view.ShowPresets(presets.Items, preset);
-            view.ShowStatus($"Going to \"{preset.Name}\".", false);
+            ShowStatus($"Going to \"{preset.Name}\".", false);
         }
     }
 
@@ -66,7 +66,7 @@ public sealed partial class MainPresenter
         var preset = presets.At(index);
         if (preset is null)
         {
-            view.ShowStatus($"No preset #{index + 1}.", true);
+            ShowStatus($"No preset #{index + 1}.", true);
             return;
         }
 
@@ -100,7 +100,7 @@ public sealed partial class MainPresenter
         }
         catch (ArgumentException ex)
         {
-            view.ShowStatus(ex.Message, true);
+            ShowStatus(ex.Message, true);
             return;
         }
 
@@ -138,13 +138,13 @@ public sealed partial class MainPresenter
         }
         catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is InvalidOperationException)
         {
-            view.ShowStatus("Could not save presets: " + ex.Message, true);
+            ShowStatus("Could not save presets: " + ex.Message, true, ex);
             return;
         }
 
         if (status is not null)
         {
-            view.ShowStatus(status, false);
+            ShowStatus(status, false);
         }
     }
 }

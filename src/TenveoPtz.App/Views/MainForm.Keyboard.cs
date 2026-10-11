@@ -9,7 +9,8 @@ namespace TenveoPtz.App.Views;
 
 /// <summary>
 /// Keyboard shortcuts: arrows pan/tilt (hold, combinable for diagonals), +/- or Page Up/Down zoom,
-/// Home recentres, 1..9 recall presets. Ignored while an input field or list has focus.
+/// Home recentres, 1..9 recall presets (all ignored while an input field or list has focus).
+/// Ctrl+Shift+D toggles the hidden debug console.
 /// </summary>
 internal sealed partial class MainForm
 {
@@ -18,6 +19,12 @@ internal sealed partial class MainForm
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
+        if (keyData == DebugConsoleKeys)
+        {
+            ToggleDebugConsole();
+            return true;
+        }
+
         if (IsKeyboardTarget(FocusedLeaf()) || (keyData & (Keys.Control | Keys.Alt)) != 0)
         {
             return base.ProcessCmdKey(ref msg, keyData);

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using TenveoPtz.Core.Diagnostics;
 using TenveoPtz.Core.Execution;
 using TenveoPtz.Core.Ptz;
 using TenveoPtz.Core.Settings;
@@ -18,12 +19,14 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
     private readonly IVideoService videoService;
     private readonly ISerialPortProvider serialPorts;
     private readonly ITickerFactory tickers;
+    private readonly Logger log;
 
-    public CameraSessionFactory(IVideoService videoService, ISerialPortProvider serialPorts, ITickerFactory tickers)
+    public CameraSessionFactory(IVideoService videoService, ISerialPortProvider serialPorts, ITickerFactory tickers, Logger? log = null)
     {
         this.videoService = videoService ?? throw new ArgumentNullException(nameof(videoService));
         this.serialPorts = serialPorts ?? throw new ArgumentNullException(nameof(serialPorts));
         this.tickers = tickers ?? throw new ArgumentNullException(nameof(tickers));
+        this.log = log ?? Logger.Null;
     }
 
     public CameraSession Open(ConnectionOptions options)
@@ -56,7 +59,9 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
 
         var device = videoService.GetDevices().FirstOrDefault(d => d.Name == deviceName)
             ?? throw new InvalidOperationException($"Video device \"{deviceName}\" is not connected.");
-        return videoService.Start(device);
+        var video = videoService.Start(device);
+        log.Info($"Video preview started on \"{deviceName}\" ({(video.Axes is null ? "no" : "with")} UVC camera controls).");
+        return video;
     }
 
     private IPtzController CreateVisca(ConnectionOptions options)
@@ -69,9 +74,11 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
         var transport = serialPorts.Open(options.PortName, options.BaudRate);
         try
         {
-            var client = new ViscaClient(transport, options.Address);
+            var viscaLog = log.For("VISCA");
+            var client = new ViscaClient(transport, options.Address, viscaLog);
             var executor = new BackgroundCommandExecutor("VISCA " + options.PortName);
-            return new ViscaPtzController(client, executor, $"VISCA on {options.PortName}");
+            log.Info($"Opened {options.PortName} at {options.BaudRate} baud, VISCA address {options.Address}.");
+            return new ViscaPtzController(client, executor, $"VISCA on {options.PortName}", viscaLog);
         }
         catch
         {
@@ -87,6 +94,14 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
                 video is null
                     ? "UVC control needs the camera's video device: select it in the Camera list."
                     : "This video device does not expose UVC pan/tilt/zoom controls. Use VISCA instead.");
+        foreach (CameraAxis axis in Enum.GetValues(typeof(CameraAxis)))
+        {
+            var range = axes.GetRange(axis);
+            log.Info(range is null
+                ? $"UVC {axis}: not supported."
+                : $"UVC {axis}: {range.Min}..{range.Max}, step {range.Step}, default {range.Default}, current {axes.GetValue(axis)?.ToString() ?? "unknown"}.");
+        }
+
         return new UvcPtzController(axes, tickers.Create(UvcTickInterval));
     }
 }

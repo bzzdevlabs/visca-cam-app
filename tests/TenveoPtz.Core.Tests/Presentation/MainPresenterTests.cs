@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using TenveoPtz.Core.Diagnostics;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Ptz;
@@ -13,12 +15,13 @@ public sealed class MainPresenterTests : IDisposable
     private readonly FakeSessionFactory sessions = new();
     private readonly MemoryStore<AppSettings> settingsStore = new();
     private readonly MemoryStore<PresetBook> presetStore = new();
+    private readonly LogHub log = new(LogLevel.Debug, 100);
     private readonly MainPresenter presenter;
 
     public MainPresenterTests()
     {
         var devices = new FakeDevices();
-        presenter = new MainPresenter(view, devices, devices, sessions, settingsStore, presetStore);
+        presenter = new MainPresenter(view, devices, devices, sessions, settingsStore, presetStore, log: new Logger(log, "Main"));
     }
 
     private RecordingPtzController Ptz => sessions.Ptz;
@@ -47,6 +50,66 @@ public sealed class MainPresenterTests : IDisposable
         Assert.False(view.Connected);
         Assert.True(view.StatusIsError);
         Assert.Contains("COM3 is busy", view.Status);
+    }
+
+    [Fact]
+    public void Connect_FailureIsLoggedWithTheException()
+    {
+        var failure = new InvalidOperationException("COM3 is busy");
+        sessions.FailWith = failure;
+        view.Load();
+
+        view.Connect();
+
+        var entry = log.Recent().Last();
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.Same(failure, entry.Exception);
+    }
+
+    [Fact]
+    public void CameraIntents_AreLoggedAtDebugLevel()
+    {
+        view.Load();
+        view.Connect();
+
+        view.Home();
+
+        Assert.Contains(log.Recent(), e => e.Level == LogLevel.Debug && e.Message.StartsWith("Home"));
+    }
+
+    [Fact]
+    public void RawCommand_RejectsInvalidHex()
+    {
+        view.Load();
+        view.Connect();
+
+        view.SendRaw("not hex");
+
+        Assert.True(view.StatusIsError);
+        Assert.Contains("hexadecimal", view.Status);
+    }
+
+    [Fact]
+    public void RawCommand_NeedsAViscaConnection()
+    {
+        view.Load();
+        view.Connect();
+
+        view.SendRaw("81 01 06 04 FF");
+
+        Assert.True(view.StatusIsError);
+        Assert.Contains("VISCA", view.Status);
+    }
+
+    [Fact]
+    public void RawCommand_WithoutConnectionReportsError()
+    {
+        view.Load();
+
+        view.SendRaw("81 01 06 04 FF");
+
+        Assert.True(view.StatusIsError);
+        Assert.Contains("Not connected", view.Status);
     }
 
     [Fact]

@@ -24,25 +24,27 @@ public sealed partial class MainPresenter
         {
             release = await updates.FindUpdateAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            log.Info("Update check failed: " + ex.Message);
             return;
         }
 
+        log.Info(release is null ? "No newer release." : $"Version {release.Version} is available.");
         if (release is null || closing
             || !view.ConfirmUpdate($"Version {release.Version} of Tenveo PTZ is available (you have {currentVersion}). Download and install it now? The app restarts when it is done."))
         {
             return;
         }
 
-        view.ShowStatus($"Downloading version {release.Version}...", false);
+        ShowStatus($"Downloading version {release.Version}...", false);
         try
         {
             await updates.InstallAsync(release);
         }
         catch (Exception ex)
         {
-            view.ShowStatus($"Update failed: {ex.Message} You can download it from {release.PageUrl}", true);
+            ShowStatus($"Update failed: {ex.Message} You can download it from {release.PageUrl}", true, ex);
             return;
         }
 

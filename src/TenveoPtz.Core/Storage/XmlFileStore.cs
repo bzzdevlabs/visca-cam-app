@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Xml.Serialization;
+using TenveoPtz.Core.Diagnostics;
 
 namespace TenveoPtz.Core.Storage;
 
@@ -13,8 +14,9 @@ public sealed class XmlFileStore<T> : IStore<T>
 {
     private readonly string path;
     private readonly XmlSerializer serializer = new(typeof(T));
+    private readonly Logger log;
 
-    public XmlFileStore(string path)
+    public XmlFileStore(string path, Logger? log = null)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -22,6 +24,7 @@ public sealed class XmlFileStore<T> : IStore<T>
         }
 
         this.path = path;
+        this.log = log ?? Logger.Null;
     }
 
     public T Load()
@@ -36,13 +39,15 @@ public sealed class XmlFileStore<T> : IStore<T>
             using var stream = File.OpenRead(path);
             return serializer.Deserialize(stream) as T ?? new T();
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
+            log.Warning($"{path} is not valid; starting with defaults and keeping the file as .corrupt.", ex);
             KeepCorruptCopy();
             return new T();
         }
         catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
         {
+            log.Warning($"Could not read {path}; starting with defaults.", ex);
             return new T(); // Unreadable (locked or no permission): start with defaults rather than fail.
         }
     }
