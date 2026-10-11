@@ -151,11 +151,19 @@ jobs:
       - name: Build
         run: dotnet build src/TenveoPtz.Mac --configuration Release -p:Version=${{ steps.version.outputs.version }}
 
+      # The universal bundle, not the per-architecture ones built on the way.
+      - name: Locate app
+        run: |
+          app="$(find src/TenveoPtz.Mac/bin/Release -maxdepth 2 -name '*.app' -type d | grep -v '/osx-' | head -n 1)"
+          if [[ -z "$app" ]]; then find src/TenveoPtz.Mac/bin -name '*.app' -type d; echo "No universal app bundle was built." >&2; exit 1; fi
+          echo "APP=$app" >> "$GITHUB_ENV"
+          echo "App bundle: $app"
+
       - name: Smoke test (start the app in light and dark themes, Apple silicon and Intel)
-        run: bash build/smoke-test-macos.sh src/TenveoPtz.Mac/bin/Release/net10.0-macos26.0/TenveoPTZ.app dist/screenshots --sample-presets
+        run: bash build/smoke-test-macos.sh "$APP" dist/screenshots --sample-presets
 
       - name: Make disk image
-        run: bash build/make-dmg.sh src/TenveoPtz.Mac/bin/Release/net10.0-macos26.0/TenveoPTZ.app "dist/release/TenveoPTZ-${{ steps.version.outputs.version }}.dmg"
+        run: bash build/make-dmg.sh "$APP" "dist/release/TenveoPTZ-${{ steps.version.outputs.version }}.dmg"
 
       - name: Upload application
         uses: actions/upload-artifact@v7

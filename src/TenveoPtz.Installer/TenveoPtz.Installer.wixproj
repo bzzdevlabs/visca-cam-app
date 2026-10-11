@@ -9,6 +9,11 @@
   <PropertyGroup>
     <OutputName>TenveoPTZ</OutputName>
     <AppExe Condition="'$(AppExe)' == ''">$(MSBuildThisFileDirectory)..\TenveoPtz.App\bin\$(Configuration)\net48\TenveoPTZ.exe</AppExe>
+    <!--
+      ICE61: same-version upgrades are allowed on purpose (builds differ only in the fourth
+      version part). ICE91: the install folder is per-user by design (no administrator rights).
+    -->
+    <SuppressIces>ICE61;ICE91</SuppressIces>
     <DefineConstants>ProductVersion=$(Version);AppExe=$(AppExe);AppIcon=$(MSBuildThisFileDirectory)..\TenveoPtz.App\Assets\app-icon.ico</DefineConstants>
   </PropertyGroup>
 
