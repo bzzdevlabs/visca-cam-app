@@ -71,4 +71,10 @@ public interface IMainView
     string? PromptText(string title, string prompt, string initialValue);
 
     bool Confirm(string message);
+
+    /// <summary>Asks whether to install an available update.</summary>
+    bool ConfirmUpdate(string message);
+
+    /// <summary>Closes the window and starts the application again (to run an installed update).</summary>
+    void Restart();
 }

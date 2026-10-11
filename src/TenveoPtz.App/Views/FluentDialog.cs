@@ -11,7 +11,7 @@ internal sealed class FluentDialog : Form
 {
     private readonly FluentTextBox? input;
 
-    private FluentDialog(string title, string message, string primaryText, string? initialValue)
+    private FluentDialog(string title, string message, string primaryText, string cancelText, string? initialValue)
     {
         Text = title;
         Font = FluentFonts.Body;
@@ -37,7 +37,7 @@ internal sealed class FluentDialog : Form
         }
 
         var primary = new FluentButton(primaryText, appearance: ButtonAppearance.Accent) { AutoSize = false, Size = new Size(150, 32), Margin = new Padding(0, 0, 8, 0) };
-        var cancel = new FluentButton("Cancel") { AutoSize = false, Size = new Size(150, 32), Margin = new Padding(0) };
+        var cancel = new FluentButton(cancelText) { AutoSize = false, Size = new Size(150, 32), Margin = new Padding(0) };
         primary.Click += (_, _) => CloseWith(DialogResult.OK);
         cancel.Click += (_, _) => CloseWith(DialogResult.Cancel);
 
@@ -60,13 +60,13 @@ internal sealed class FluentDialog : Form
     /// <summary>Asks for one line of text; returns <c>null</c> when cancelled.</summary>
     public static string? Prompt(IWin32Window owner, string title, string message, string initialValue)
     {
-        using var dialog = new FluentDialog(title, message, "Save", initialValue);
+        using var dialog = new FluentDialog(title, message, "Save", "Cancel", initialValue);
         return dialog.ShowDialog(owner) == DialogResult.OK ? dialog.input!.Value : null;
     }
 
-    public static bool Confirm(IWin32Window owner, string title, string message, string primaryText)
+    public static bool Confirm(IWin32Window owner, string title, string message, string primaryText, string cancelText = "Cancel")
     {
-        using var dialog = new FluentDialog(title, message, primaryText, null);
+        using var dialog = new FluentDialog(title, message, primaryText, cancelText, null);
         return dialog.ShowDialog(owner) == DialogResult.OK;
     }
 

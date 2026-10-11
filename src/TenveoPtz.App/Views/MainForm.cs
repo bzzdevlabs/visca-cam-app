@@ -56,6 +56,9 @@ internal sealed partial class MainForm : Form, IMainView
 
     public event EventHandler<PresetMoveEventArgs>? MovePresetRequested;
 
+    /// <summary>The window was closed by <see cref="Restart"/>: the application must start again.</summary>
+    public bool RestartRequested { get; private set; }
+
     /// <summary>Area hosting the DirectShow video window.</summary>
     public Control VideoHost => videoSurface;
 
@@ -94,6 +97,14 @@ internal sealed partial class MainForm : Form, IMainView
     public string? PromptText(string title, string prompt, string initialValue) => FluentDialog.Prompt(this, title, prompt, initialValue);
 
     public bool Confirm(string message) => FluentDialog.Confirm(this, "Are you sure?", message, "Yes");
+
+    public bool ConfirmUpdate(string message) => FluentDialog.Confirm(this, "Update available", message, "Update", "Not now");
+
+    public void Restart()
+    {
+        RestartRequested = true;
+        Close();
+    }
 
     protected override void OnHandleCreated(EventArgs e)
     {

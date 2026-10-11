@@ -63,6 +63,12 @@ internal sealed class FakeView : IMainView
 
     public bool ConfirmAnswer { get; set; } = true;
 
+    public bool UpdateAnswer { get; set; } = true;
+
+    public string? UpdateQuestion { get; private set; }
+
+    public bool Restarted { get; private set; }
+
     public void ShowVideoDevices(IReadOnlyList<VideoDevice> devices)
     {
     }
@@ -84,6 +90,14 @@ internal sealed class FakeView : IMainView
     public string? PromptText(string title, string prompt, string initialValue) => PromptAnswer;
 
     public bool Confirm(string message) => ConfirmAnswer;
+
+    public bool ConfirmUpdate(string message)
+    {
+        UpdateQuestion = message;
+        return UpdateAnswer;
+    }
+
+    public void Restart() => Restarted = true;
 
     public void Load() => ViewLoaded?.Invoke(this, EventArgs.Empty);
 
