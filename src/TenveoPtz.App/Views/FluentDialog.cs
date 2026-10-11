@@ -27,7 +27,7 @@ internal sealed class FluentDialog : Form
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         BackColor = Theme.Current.Surface;
 
-        var content = new TableLayoutPanel { ColumnCount = 1, AutoSize = true, Padding = new Padding(24, 20, 24, 24), Dock = DockStyle.Top };
+        var content = new TableLayoutPanel { ColumnCount = 1, AutoSize = true, Padding = new Padding(24, 20, 24, 24), Margin = new Padding(0) };
         content.Controls.Add(new Label { Text = title, Font = FluentFonts.Subtitle, ForeColor = Theme.Current.Text, AutoSize = true, Margin = new Padding(0, 0, 0, 12) });
         content.Controls.Add(new Label { Text = message, ForeColor = Theme.Current.Text, AutoSize = true, MaximumSize = new Size(360, 0), Margin = new Padding(0, 0, 0, 12) });
         if (initialValue is not null)
@@ -43,8 +43,9 @@ internal sealed class FluentDialog : Form
 
         var footer = new FlowLayoutPanel
         {
-            Dock = DockStyle.Top,
+            Anchor = AnchorStyles.Left | AnchorStyles.Right, // Spans the dialog width, buttons on the right.
             AutoSize = true,
+            Margin = new Padding(0),
             FlowDirection = FlowDirection.RightToLeft,
             Padding = new Padding(24),
             BackColor = Theme.Current.Background,
@@ -52,8 +53,12 @@ internal sealed class FluentDialog : Form
         footer.Controls.Add(cancel);
         footer.Controls.Add(primary);
 
-        Controls.Add(footer);
-        Controls.Add(content);
+        // A table sizes the dialog to its content: with docked children, an auto-sized form gets
+        // their height but not their width and shrinks to the minimum window width.
+        var root = new TableLayoutPanel { ColumnCount = 1, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = new Padding(0) };
+        root.Controls.Add(content, 0, 0);
+        root.Controls.Add(footer, 0, 1);
+        Controls.Add(root);
         KeyPreview = true;
     }
 
