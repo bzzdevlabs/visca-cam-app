@@ -66,6 +66,27 @@ update check.
   menu, and that the adapter's TX/RX wiring matches the camera's VISCA pinout.
 - **Black preview**: another program (Teams, OBS, Zoom...) is probably using the camera.
 
+### Logs and debug console
+
+The app keeps a log in `%APPDATA%\TenveoPTZ\logs\` (one `tenveo-yyyymmdd.log` file per day,
+the last 7 days are kept): start-up, devices found, connections, status messages and errors
+with their details.
+
+Press **Ctrl+Shift+D** in the main window to open the hidden debug console:
+
+- the live log;
+- **Verbose logging**: also records every VISCA packet sent and received (`TX` / `RX`) and
+  every pan/tilt/zoom request, until the app is closed;
+- **Copy diagnostics**: copies the app and Windows versions, the settings and the recent log
+  to the clipboard, to paste into a bug report;
+- **Open log folder**;
+- **Raw VISCA** (VISCA mode only): sends bytes typed by hand, either the payload (`01 06 04`)
+  or the full packet (`81 01 06 04 FF`); the camera's reply is logged, which also makes it
+  possible to read inquiries such as `09 04 47` (zoom position).
+
+Starting the app with `TenveoPTZ.exe --debug` turns verbose logging on from the start and
+opens the console.
+
 ## Building from source
 
 Requires the [.NET SDK](https://dotnet.microsoft.com/download) 10 or later; works on Windows,
