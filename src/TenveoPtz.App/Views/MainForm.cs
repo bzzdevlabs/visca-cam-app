@@ -24,6 +24,8 @@ internal sealed partial class MainForm : Form, IMainView
 
     public event EventHandler? ViewLoaded;
 
+    public event EventHandler? ViewShown;
+
     public event EventHandler? ViewClosing;
 
     public event EventHandler? RefreshDevicesRequested;
@@ -129,6 +131,12 @@ internal sealed partial class MainForm : Form, IMainView
     {
         base.OnLoad(e);
         ViewLoaded?.Invoke(this, EventArgs.Empty);
+    }
+
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        ViewShown?.Invoke(this, EventArgs.Empty);
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)

@@ -16,6 +16,9 @@ public interface IMainView
     /// <summary>The window is shown for the first time.</summary>
     event EventHandler? ViewLoaded;
 
+    /// <summary>The window is visible for the first time: dialogs can now be shown over it.</summary>
+    event EventHandler? ViewShown;
+
     /// <summary>The window is closing; last chance to save state.</summary>
     event EventHandler? ViewClosing;
 
