@@ -106,7 +106,12 @@ foreach ($theme in $Themes) {
             Write-Host "[$theme] Screenshot saved to $path"
         }
 
-        $console = [Win32.Window]::FindWindow($null, "Tenveo PTZ - debug console")
+        # [NullString]: PowerShell would pass $null to a string parameter as "", which FindWindow treats as a class name.
+        $consoleDeadline = (Get-Date).AddSeconds(5)
+        do {
+            $console = [Win32.Window]::FindWindow([NullString]::Value, "Tenveo PTZ - debug console")
+            if ($console -eq [IntPtr]::Zero) { Start-Sleep -Milliseconds 250 }
+        } until ($console -ne [IntPtr]::Zero -or (Get-Date) -gt $consoleDeadline)
         if ($console -eq [IntPtr]::Zero) { throw "[$theme] The debug console did not open." }
         Write-Host "[$theme] Debug console is up."
         if ($ScreenshotDir) {
