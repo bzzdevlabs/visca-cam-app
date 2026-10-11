@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-    Starts the application, checks that its main window appears without an error dialog, saves
-    a screenshot of the window, then closes it. Runs once per theme. Used by CI; also handy on a
-    test PC.
+    Starts the application, checks that its main window and its debug console (opened by
+    --debug) appear without an error dialog, saves screenshots of both, closes the app and checks
+    that it wrote its log file. Runs once per theme. Used by CI; also handy on a test PC.
 .PARAMETER SamplePresets
     Writes sample presets and settings to %APPDATA%\TenveoPTZ first so the screenshots show a
     filled list; the light run uses USB (UVC) control and the dark run serial (VISCA) control,
@@ -32,6 +32,7 @@ Add-Type -Namespace Win32 -Name Window -MemberDefinition @"
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window, out Rect rect);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr window, IntPtr dc, uint flags);
     [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindow(string className, string title);
 "@
 
 function Save-WindowImage([IntPtr] $Window, [string] $Path) {
@@ -81,7 +82,7 @@ foreach ($theme in $Themes) {
 "@ | Set-Content -Encoding UTF8 (Join-Path $env:APPDATA "TenveoPTZ\settings.xml")
     }
 
-    $process = Start-Process -FilePath (Resolve-Path $Exe) -ArgumentList "--theme=$theme" -PassThru
+    $process = Start-Process -FilePath (Resolve-Path $Exe) -ArgumentList "--theme=$theme", "--debug" -PassThru
     try {
         $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
         do {
@@ -105,9 +106,25 @@ foreach ($theme in $Themes) {
             Write-Host "[$theme] Screenshot saved to $path"
         }
 
+        $console = [Win32.Window]::FindWindow($null, "Tenveo PTZ - debug console")
+        if ($console -eq [IntPtr]::Zero) { throw "[$theme] The debug console did not open." }
+        Write-Host "[$theme] Debug console is up."
+        if ($ScreenshotDir) {
+            $path = Join-Path $ScreenshotDir "screenshot-$theme-debug-console.png"
+            Save-WindowImage $console $path
+            Write-Host "[$theme] Screenshot saved to $path"
+        }
+
         if (-not $process.CloseMainWindow()) { throw "[$theme] The window did not accept the close request." }
         if (-not $process.WaitForExit(10000)) { throw "[$theme] The application did not exit after closing its window." }
         Write-Host "[$theme] Closed cleanly (exit code $($process.ExitCode))."
+
+        $log = Get-ChildItem (Join-Path $env:APPDATA "TenveoPTZ\logs") -Filter "tenveo-*.log" -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime | Select-Object -Last 1
+        if (-not $log -or -not (Select-String -Path $log.FullName -Pattern "starting" -Quiet)) {
+            throw "[$theme] No log file was written to %APPDATA%\TenveoPTZ\logs."
+        }
+        Write-Host "[$theme] Log written to $($log.FullName)."
     }
     finally {
         if (-not $process.HasExited) { $process.Kill() }
