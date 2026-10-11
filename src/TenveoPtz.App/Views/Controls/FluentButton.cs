@@ -87,6 +87,8 @@ internal sealed class FluentButton : FluentControl
         return new Size((int)Math.Ceiling(width) + Padding.Horizontal, (int)Math.Ceiling(height));
     }
 
+    protected override AccessibleObject CreateAccessibilityInstance() => new ButtonAccessibleObject(this);
+
     protected override void OnPaint(PaintEventArgs e)
     {
         var graphics = e.Graphics;
@@ -165,6 +167,32 @@ internal sealed class FluentButton : FluentControl
         {
             held = false;
             Released?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>Lets screen readers and UI automation see a push button they can press.</summary>
+    private sealed class ButtonAccessibleObject : ControlAccessibleObject
+    {
+        private readonly FluentButton button;
+
+        public ButtonAccessibleObject(FluentButton button)
+            : base(button)
+        {
+            this.button = button;
+        }
+
+        public override AccessibleRole Role => AccessibleRole.PushButton;
+
+        public override string? Name => button.AccessibleName ?? (button.Text.Length > 0 ? button.Text : base.Name);
+
+        public override string DefaultAction => "Press";
+
+        public override void DoDefaultAction()
+        {
+            if (button.Enabled)
+            {
+                button.OnClick(EventArgs.Empty);
+            }
         }
     }
 }
