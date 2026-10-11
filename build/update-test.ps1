@@ -11,7 +11,12 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.Forms
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+Add-Type -Namespace Win32 -Name Mouse -MemberDefinition @"
+    [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+    [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] public static extern void mouse_event(uint flags, int dx, int dy, uint data, UIntPtr extra);
+"@
 $automation = [System.Windows.Automation.AutomationElement]
 
 function Wait-For([scriptblock] $Condition, [string] $What) {
@@ -47,10 +52,13 @@ try {
     Write-Host "Prompt shown."
     $button = Find-Named $dialog "Update" $process.Id
     if (-not $button) { throw "The prompt has no 'Update' button." }
-    # The custom-drawn button exposes no Invoke pattern: focus it and press Space, like a keyboard user.
-    $button.SetFocus()
-    Start-Sleep -Milliseconds 300
-    [System.Windows.Forms.SendKeys]::SendWait(" ")
+    # The custom-drawn button exposes no Invoke pattern and cannot be focused through UI
+    # automation: click its centre with the mouse, like a user.
+    [void][Win32.Mouse]::SetProcessDPIAware() # Bounding rectangles are in physical pixels.
+    $bounds = $button.Current.BoundingRectangle
+    [void][Win32.Mouse]::SetCursorPos([int]($bounds.X + $bounds.Width / 2), [int]($bounds.Y + $bounds.Height / 2))
+    [Win32.Mouse]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero) # Left button down.
+    [Win32.Mouse]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero) # Left button up.
 
     if (-not $process.WaitForExit($TimeoutSeconds * 1000)) { throw "The application did not close to install the update." }
     Write-Host "Closed for the update (exit code $($process.ExitCode))."
