@@ -23,13 +23,13 @@ Every [release](../../releases) has three files (build artifacts of any run are 
 | --- | --- |
 | `TenveoPTZ-x.y.z.n.exe` | Windows, no installation: put it anywhere and run it. |
 | `TenveoPTZ-x.y.z.n.msi` | Windows installer: adds the app to the Start menu and to *Installed apps*. Installs for the current user only, so no administrator rights are needed. |
-| `TenveoPTZ-x.y.z.n.dmg` | macOS (Intel and Apple silicon): open it and drag **TenveoPTZ** onto **Applications**. |
+| `TenveoPTZ-x.y.z.n.dmg` | macOS (Intel and Apple silicon): open it and drag **Tenveo PTZ** onto **Applications**. |
 
 The app is not code-signed:
 
 - **Windows**: SmartScreen may warn you the first time: choose **More info**, then **Run anyway**.
 - **macOS**: the first time, macOS refuses to open it because it cannot check it for malware.
-  Open **System Settings > Privacy & Security**, scroll down to the message about TenveoPTZ
+  Open **System Settings > Privacy & Security**, scroll down to the message about Tenveo PTZ
   and choose **Open Anyway**. macOS then asks to allow the camera: choose **Allow**.
 
 ## Using it
@@ -60,7 +60,7 @@ menu). Presets saved in UVC mode store the absolute position on the computer.
 
 On start-up the app checks the [Releases](../../releases) page for a newer version. When one
 exists it asks whether to install it: **Update** downloads it, replaces the app (`TenveoPTZ.exe`
-on Windows, `TenveoPTZ.app` on macOS) and restarts it; **Not now** asks again on the next
+on Windows, `Tenveo PTZ.app` on macOS) and restarts it; **Not now** asks again on the next
 start. Without internet access the check is silently skipped. If the app's folder is not
 writable, the status line says so: download the new version by hand instead. On macOS the app
 must have been moved out of the disk image (to **Applications**) to update itself.
@@ -83,7 +83,7 @@ update check.
 - **VISCA: nothing moves**: check the port, the baud rate and the address set in the camera's
   menu, and that the adapter's TX/RX wiring matches the camera's VISCA pinout.
 - **Black preview**: another program (Teams, OBS, Zoom...) is probably using the camera.
-- **macOS: "may not use the camera"**: allow TenveoPTZ in **System Settings > Privacy &
+- **macOS: "may not use the camera"**: allow Tenveo PTZ in **System Settings > Privacy &
   Security > Camera**, then restart the app.
 
 ### Logs and debug console
@@ -132,7 +132,7 @@ The macOS app builds on a Mac with Xcode 26 and the .NET macOS workload; it is k
 ```bash
 dotnet workload install macos
 dotnet build src/TenveoPtz.Mac --configuration Release
-build/make-dmg.sh src/TenveoPtz.Mac/bin/Release/net10.0-macos26.0/TenveoPTZ.app dist/TenveoPTZ.dmg
+build/make-dmg.sh "src/TenveoPtz.Mac/bin/Release/net10.0-macos26.0/Tenveo PTZ.app" dist/TenveoPTZ.dmg
 ```
 
 ### Continuous integration and releases
