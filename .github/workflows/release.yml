@@ -34,21 +34,25 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
-          name: ${{ needs.build.outputs.artifact }}
-          path: TenveoPTZ
+          name: ${{ needs.build.outputs.windows-artifact }}
+          path: release
 
-      - name: Zip application
-        run: cd TenveoPTZ && zip -r "../TenveoPTZ-$VERSION.zip" .
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.macos-artifact }}
+          path: release
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Re-running the job replaces the asset instead of failing on the existing release.
+          # Windows: stand-alone .exe and .msi installer; macOS: universal .dmg.
+          assets=(release/TenveoPTZ-"$VERSION".{exe,msi,dmg})
+          # Re-running the job replaces the assets instead of failing on the existing release.
           if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            gh release upload "v$VERSION" "TenveoPTZ-$VERSION.zip" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release upload "v$VERSION" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
           else
-            gh release create "v$VERSION" "TenveoPTZ-$VERSION.zip" \
+            gh release create "v$VERSION" "${assets[@]}" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
               --title "Tenveo PTZ $VERSION" \
