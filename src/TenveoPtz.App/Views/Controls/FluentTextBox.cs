@@ -37,6 +37,11 @@ internal sealed class FluentTextBox : FluentControl
     protected override void OnLayout(LayoutEventArgs levent)
     {
         base.OnLayout(levent);
+        if (input is null)
+        {
+            return; // Layout raised by the base constructor (setting the font), before the text box exists.
+        }
+
         var inset = (int)Px(10);
         input.SetBounds(inset, (Height - input.Height) / 2, Width - (2 * inset), input.Height);
     }
