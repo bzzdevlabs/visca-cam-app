@@ -1,0 +1,40 @@
+<!--
+  Per-user install into %LOCALAPPDATA%\Programs\TenveoPTZ: no administrator rights are needed,
+  and the application can update itself in place (the folder is writable by the user).
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="Tenveo PTZ Controller"
+    Manufacturer="Tenveo PTZ Controller contributors"
+    Version="$(ProductVersion)"
+    UpgradeCode="BCE1F42B-BDD4-4CBF-B73E-567339222084"
+    Scope="perUser"
+    Compressed="yes">
+
+    <!-- Builds of the same major.minor.patch differ only in the fourth part, which Windows Installer ignores. -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon.ico" SourceFile="$(AppIcon)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/bzzdevlabs/visca-cam-app" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="UserProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="TenveoPTZ" />
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Components in the user profile must use a registry key path (the files may be replaced by updates). -->
+    <Component Id="Application" Directory="INSTALLFOLDER" Guid="41066407-1CD6-4DF1-946E-226CE792A585">
+      <File Id="TenveoPTZ.exe" Source="$(AppExe)" KeyPath="no" />
+      <RegistryValue Root="HKCU" Key="Software\TenveoPTZ" Name="InstallFolder" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+      <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="Tenveo PTZ" Target="[#TenveoPTZ.exe]" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon.ico" />
+      <!-- Removes the update backup (TenveoPTZ.exe.update-old) too, so uninstalling leaves nothing behind. -->
+      <RemoveFile Id="UpdateBackup" Name="*.update-old" On="uninstall" />
+      <RemoveFolder Id="RemoveInstallFolder" On="uninstall" />
+      <RemoveFolder Id="RemoveUserProgramsFolder" Directory="UserProgramsFolder" On="uninstall" />
+    </Component>
+  </Package>
+</Wix>

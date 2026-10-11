@@ -1,0 +1,15 @@
+<!--
+  Windows installer (TenveoPTZ.msi), built with WiX Toolset 5 on Windows only. It packages the
+  executable built by TenveoPtz.App, so build that first:
+    dotnet build src/TenveoPtz.App -c Release
+    dotnet build src/TenveoPtz.Installer -c Release
+-->
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <PropertyGroup>
+    <OutputName>TenveoPTZ</OutputName>
+    <AppExe Condition="'$(AppExe)' == ''">$(MSBuildThisFileDirectory)..\TenveoPtz.App\bin\$(Configuration)\net48\TenveoPTZ.exe</AppExe>
+    <DefineConstants>ProductVersion=$(Version);AppExe=$(AppExe);AppIcon=$(MSBuildThisFileDirectory)..\TenveoPtz.App\Assets\app-icon.ico</DefineConstants>
+  </PropertyGroup>
+
+</Project>
