@@ -55,6 +55,22 @@ public sealed class ViscaCommandsTests
     }
 
     [Theory]
+    [InlineData(new byte[] { 0x01, 0x06, 0x04 })]
+    [InlineData(new byte[] { 0x81, 0x01, 0x06, 0x04, 0xFF })]
+    public void Raw_AcceptsPayloadOrFullPacket(byte[] bytes)
+    {
+        Assert.Equal(new byte[] { 0x01, 0x06, 0x04 }, ViscaCommands.Raw(bytes).Payload);
+    }
+
+    [Theory]
+    [InlineData(new byte[0])]
+    [InlineData(new byte[] { 0x01, 0xFF, 0x06 })]
+    public void Raw_RejectsEmptyOrTerminatedPayload(byte[] bytes)
+    {
+        Assert.Throws<ArgumentException>(() => ViscaCommands.Raw(bytes));
+    }
+
+    [Theory]
     [InlineData(0)]
     [InlineData(8)]
     public void ToPacket_RejectsInvalidAddress(int address)

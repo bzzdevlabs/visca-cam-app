@@ -47,6 +47,8 @@ internal sealed class FakeView : IMainView
 
     public event EventHandler<PresetMoveEventArgs>? MovePresetRequested;
 
+    public event EventHandler<RawCommandEventArgs>? RawCommandRequested;
+
     public ConnectionOptions ConnectionOptions { get; set; } = new();
 
     public double Speed { get; set; }
@@ -139,6 +141,8 @@ internal sealed class FakeView : IMainView
     public void RenamePreset(Preset preset) => RenamePresetRequested?.Invoke(this, new PresetEventArgs(preset));
 
     public void DeletePreset(Preset preset) => DeletePresetRequested?.Invoke(this, new PresetEventArgs(preset));
+
+    public void SendRaw(string text) => RawCommandRequested?.Invoke(this, new RawCommandEventArgs(text));
 
     public void MovePreset(Preset preset, int offset) => MovePresetRequested?.Invoke(this, new PresetMoveEventArgs(preset, offset));
 }

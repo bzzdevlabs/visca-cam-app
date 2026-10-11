@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
+using TenveoPtz.Core.Diagnostics;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Session;
 using TenveoPtz.Core.Settings;
@@ -27,6 +30,7 @@ public sealed partial class MainPresenter : IDisposable
     private readonly IUpdateService? updates;
     private readonly Version currentVersion;
     private readonly SynchronizationContext? uiContext;
+    private readonly Logger log;
 
     private AppSettings settings = new();
     private PresetBook presets = new();
@@ -40,7 +44,8 @@ public sealed partial class MainPresenter : IDisposable
         IStore<AppSettings> settingsStore,
         IStore<PresetBook> presetStore,
         IUpdateService? updates = null,
-        Version? currentVersion = null)
+        Version? currentVersion = null,
+        Logger? log = null)
     {
         this.view = view ?? throw new ArgumentNullException(nameof(view));
         this.videoService = videoService ?? throw new ArgumentNullException(nameof(videoService));
@@ -51,6 +56,7 @@ public sealed partial class MainPresenter : IDisposable
         this.updates = updates;
         this.currentVersion = currentVersion ?? new Version(0, 0);
         uiContext = SynchronizationContext.Current;
+        this.log = log ?? Logger.Null;
 
         view.ViewLoaded += (_, _) => Initialize();
         view.ViewShown += (_, _) => CheckForUpdates();
@@ -70,6 +76,7 @@ public sealed partial class MainPresenter : IDisposable
     {
         settings = settingsStore.Load();
         presets = presetStore.Load();
+        log.Info($"Loaded settings ({settings.Connection.Mode} mode, auto-connect {(settings.AutoConnect ? "on" : "off")}) and {presets.Items.Count} preset(s).");
 
         view.AlwaysOnTop = settings.AlwaysOnTop;
         view.Speed = settings.Speed;
@@ -84,7 +91,7 @@ public sealed partial class MainPresenter : IDisposable
         }
         else
         {
-            view.ShowStatus("Choose the camera and how to control it, then press Connect.", false);
+            ShowStatus("Choose the camera and how to control it, then press Connect.", false);
         }
     }
 
@@ -97,6 +104,7 @@ public sealed partial class MainPresenter : IDisposable
         settings.AutoConnect = IsConnected;
         TrySave(() => settingsStore.Save(settings));
         CloseSession();
+        log.Info("Closed.");
     }
 
     private void RefreshDevices()
@@ -104,13 +112,16 @@ public sealed partial class MainPresenter : IDisposable
         var options = view.ConnectionOptions;
         try
         {
-            view.ShowVideoDevices(videoService.GetDevices());
-            view.ShowSerialPorts(serialPorts.GetPortNames());
+            var devices = videoService.GetDevices();
+            var ports = serialPorts.GetPortNames();
+            log.Info($"Video devices: {Describe(devices.Select(d => d.Name))}. Serial ports: {Describe(ports)}.");
+            view.ShowVideoDevices(devices);
+            view.ShowSerialPorts(ports);
             view.ConnectionOptions = options;
         }
         catch (Exception ex)
         {
-            view.ShowStatus("Could not list devices: " + ex.Message, true);
+            ShowStatus("Could not list devices: " + ex.Message, true, ex);
         }
     }
 
@@ -118,6 +129,7 @@ public sealed partial class MainPresenter : IDisposable
     {
         CloseSession();
         var options = view.ConnectionOptions.Clone();
+        log.Info($"Connecting: mode {options.Mode}, video \"{options.VideoDeviceName}\", port {options.PortName}, {options.BaudRate} baud, address {options.Address}.");
         try
         {
             session = sessionFactory.Open(options);
@@ -126,7 +138,7 @@ public sealed partial class MainPresenter : IDisposable
         catch (Exception ex)
         {
             view.ShowConnected(false);
-            view.ShowStatus("Connection failed: " + ex.Message, true);
+            ShowStatus("Connection failed: " + ex.Message, true, ex);
             return;
         }
 
@@ -134,7 +146,7 @@ public sealed partial class MainPresenter : IDisposable
         settings.AutoConnect = true;
         TrySave(() => settingsStore.Save(settings));
         view.ShowConnected(true);
-        view.ShowStatus("Connected: " + session.Description, false);
+        ShowStatus("Connected: " + session.Description, false);
     }
 
     private void Disconnect()
@@ -144,7 +156,7 @@ public sealed partial class MainPresenter : IDisposable
         TrySave(() => settingsStore.Save(settings));
 
         view.ShowConnected(false);
-        view.ShowStatus("Disconnected.", false);
+        ShowStatus("Disconnected.", false);
     }
 
     private void CloseSession()
@@ -161,8 +173,33 @@ public sealed partial class MainPresenter : IDisposable
 
     private void OnPtzFaulted(object? sender, ErrorEventArgs e)
     {
-        var message = e.GetException().Message;
-        RunOnUi(() => view.ShowStatus(message, true));
+        var exception = e.GetException();
+        RunOnUi(() => ShowStatus(exception.Message, true, exception));
+    }
+
+    /// <summary>Shows a status message and records it, so the log tells what the user saw.</summary>
+    private void ShowStatus(string message, bool isError, Exception? exception = null)
+    {
+        if (exception is not null)
+        {
+            log.Error(message, exception);
+        }
+        else if (isError)
+        {
+            log.Warning(message);
+        }
+        else
+        {
+            log.Info(message);
+        }
+
+        view.ShowStatus(message, isError);
+    }
+
+    private static string Describe(IEnumerable<string> names)
+    {
+        var list = string.Join(", ", names);
+        return list.Length == 0 ? "none" : list;
     }
 
     private void RunOnUi(Action action)
@@ -185,7 +222,7 @@ public sealed partial class MainPresenter : IDisposable
         }
         catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is InvalidOperationException)
         {
-            view.ShowStatus("Could not save settings: " + ex.Message, true);
+            ShowStatus("Could not save settings: " + ex.Message, true, ex);
         }
     }
 }

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using TenveoPtz.Core.Ptz;
 
 namespace TenveoPtz.Core.Visca;
@@ -40,6 +42,31 @@ public static class ViscaCommands
                 panByte, tiltByte,
             },
             waitForCompletion: false);
+    }
+
+    /// <summary>
+    /// Arbitrary command typed in the debug console. Accepts the bare payload (<c>01 06 04</c>) or a
+    /// full packet (<c>81 01 06 04 FF</c>), whose header and terminator are then stripped.
+    /// </summary>
+    public static ViscaCommand Raw(IReadOnlyList<byte> bytes)
+    {
+        if (bytes is null)
+        {
+            throw new ArgumentNullException(nameof(bytes));
+        }
+
+        var payload = bytes.ToList();
+        if (payload.Count >= 3 && (payload[0] & 0xF0) == 0x80 && payload[payload.Count - 1] == ViscaCommand.Terminator)
+        {
+            payload = payload.GetRange(1, payload.Count - 2);
+        }
+
+        if (payload.Count == 0 || payload.Contains(ViscaCommand.Terminator))
+        {
+            throw new ArgumentException("Type the command bytes without the FF terminator inside them.", nameof(bytes));
+        }
+
+        return new ViscaCommand("Raw command", payload);
     }
 
     public static ViscaCommand Home() => new("Home", new byte[] { 0x01, 0x06, 0x04 });

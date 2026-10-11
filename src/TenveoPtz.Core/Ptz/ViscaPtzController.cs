@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using TenveoPtz.Core.Diagnostics;
 using TenveoPtz.Core.Execution;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Visca;
@@ -10,7 +12,7 @@ namespace TenveoPtz.Core.Ptz;
 /// PTZ strategy using VISCA over a serial line. Presets live in the camera's own memory,
 /// so they survive restarts and are recalled with the camera's built-in motion profile.
 /// </summary>
-public sealed class ViscaPtzController : IPtzController
+public sealed class ViscaPtzController : IPtzController, IRawCommandSender
 {
     private const string PanTiltKey = "pan-tilt";
     private const string ZoomKey = "zoom";
@@ -18,14 +20,16 @@ public sealed class ViscaPtzController : IPtzController
 
     private readonly ViscaClient client;
     private readonly ICommandExecutor executor;
+    private readonly Logger log;
 
     /// <param name="client">VISCA client. Ownership is transferred to the controller.</param>
     /// <param name="executor">Executor serialising I/O. Ownership is transferred to the controller.</param>
-    public ViscaPtzController(ViscaClient client, ICommandExecutor executor, string description)
+    public ViscaPtzController(ViscaClient client, ICommandExecutor executor, string description, Logger? log = null)
     {
         this.client = client ?? throw new ArgumentNullException(nameof(client));
         this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
         Description = description;
+        this.log = log ?? Logger.Null;
     }
 
     public event EventHandler<ErrorEventArgs>? Faulted
@@ -57,6 +61,18 @@ public sealed class ViscaPtzController : IPtzController
     public void RecallPreset(Preset preset) => Send(ViscaCommands.MemoryRecall(RequirePreset(preset).Slot), PanTiltKey);
 
     public void ForgetPreset(Preset preset) => Send(ViscaCommands.MemoryReset(RequirePreset(preset).Slot));
+
+    public void SendRaw(IReadOnlyList<byte> bytes)
+    {
+        var command = ViscaCommands.Raw(bytes);
+        executor.Post(() =>
+        {
+            var reply = client.Send(command);
+            log.Info(reply is null
+                ? $"Raw command {HexBytes.Format(command.Payload)}: no reply"
+                : $"Raw command {HexBytes.Format(command.Payload)}: reply {HexBytes.Format(reply)}");
+        });
+    }
 
     public void Dispose()
     {
