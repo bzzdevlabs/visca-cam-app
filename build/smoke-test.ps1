@@ -112,7 +112,11 @@ foreach ($theme in $Themes) {
             $console = [Win32.Window]::FindWindow([NullString]::Value, "Tenveo PTZ - debug console")
             if ($console -eq [IntPtr]::Zero) { Start-Sleep -Milliseconds 250 }
         } until ($console -ne [IntPtr]::Zero -or (Get-Date) -gt $consoleDeadline)
-        if ($console -eq [IntPtr]::Zero) { throw "[$theme] The debug console did not open." }
+        if ($console -eq [IntPtr]::Zero) {
+            Get-ChildItem (Join-Path $env:APPDATA "TenveoPTZ\logs") -Filter "tenveo-*.log" -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTime | Select-Object -Last 1 | Get-Content -Tail 40 | Write-Host
+            throw "[$theme] The debug console did not open (the app's log is above)."
+        }
         Write-Host "[$theme] Debug console is up."
         if ($ScreenshotDir) {
             $path = Join-Path $ScreenshotDir "screenshot-$theme-debug-console.png"
