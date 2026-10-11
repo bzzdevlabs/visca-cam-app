@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.IO.Compression;
 using TenveoPtz.Core.Updates;
 
 namespace TenveoPtz.Core.Tests.Updates;
@@ -20,43 +19,49 @@ public sealed class UpdateInstallerTests : IDisposable
     public void Dispose() => Directory.Delete(root, recursive: true);
 
     [Fact]
-    public void Install_ReplacesFilesAndKeepsOldOnesAside()
+    public void Install_ReplacesExecutableAndKeepsOldOneAside()
     {
-        File.WriteAllText(Path.Combine(app, "TenveoPTZ.exe"), "old exe");
-        File.WriteAllText(Path.Combine(app, "TenveoPtz.Core.dll"), "old dll");
-        var archive = CreateArchive(("TenveoPTZ.exe", "new exe"), ("TenveoPtz.Core.dll", "new dll"), ("README.md", "readme"));
+        File.WriteAllText(Path.Combine(app, "TenveoPTZ.exe"), "MZ old");
 
-        installer.Install(archive);
+        installer.Install(Download("MZ new"));
 
-        Assert.Equal("new exe", File.ReadAllText(Path.Combine(app, "TenveoPTZ.exe")));
-        Assert.Equal("new dll", File.ReadAllText(Path.Combine(app, "TenveoPtz.Core.dll")));
-        Assert.Equal("readme", File.ReadAllText(Path.Combine(app, "README.md")));
-        Assert.Equal("old exe", File.ReadAllText(Path.Combine(app, "TenveoPTZ.exe.update-old")));
+        Assert.Equal("MZ new", File.ReadAllText(Path.Combine(app, "TenveoPTZ.exe")));
+        Assert.Equal("MZ old", File.ReadAllText(Path.Combine(app, "TenveoPTZ.exe.update-old")));
     }
 
     [Fact]
-    public void Install_RejectsArchiveWithoutExecutable()
+    public void Install_ReplacesPreviousBackup()
     {
-        File.WriteAllText(Path.Combine(app, "TenveoPTZ.exe"), "old exe");
-        var archive = CreateArchive(("something.txt", "not the app"));
+        File.WriteAllText(Path.Combine(app, "TenveoPTZ.exe"), "MZ old");
+        File.WriteAllText(Path.Combine(app, "TenveoPTZ.exe.update-old"), "MZ older");
 
-        Assert.Throws<InvalidDataException>(() => installer.Install(archive));
+        installer.Install(Download("MZ new"));
 
-        Assert.Equal("old exe", File.ReadAllText(Path.Combine(app, "TenveoPTZ.exe")));
-        Assert.False(File.Exists(Path.Combine(app, "something.txt")));
+        Assert.Equal("MZ old", File.ReadAllText(Path.Combine(app, "TenveoPTZ.exe.update-old")));
     }
 
     [Fact]
-    public void Install_FailureRestoresOriginalFiles()
+    public void Install_RejectsFileThatIsNotAnExecutable()
     {
-        File.WriteAllText(Path.Combine(app, "TenveoPTZ.exe"), "old exe");
-        Directory.CreateDirectory(Path.Combine(app, "zz-blocked")); // A folder where a file must go: copying fails.
-        var archive = CreateArchive(("TenveoPTZ.exe", "new exe"), ("zz-blocked", "file"));
+        File.WriteAllText(Path.Combine(app, "TenveoPTZ.exe"), "MZ old");
 
-        Assert.ThrowsAny<Exception>(() => installer.Install(archive));
+        Assert.Throws<InvalidDataException>(() => installer.Install(Download("<html>rate limited</html>")));
 
-        Assert.Equal("old exe", File.ReadAllText(Path.Combine(app, "TenveoPTZ.exe")));
+        Assert.Equal("MZ old", File.ReadAllText(Path.Combine(app, "TenveoPTZ.exe")));
         Assert.False(File.Exists(Path.Combine(app, "TenveoPTZ.exe.update-old")));
+    }
+
+    [Fact]
+    public void Install_FailureRestoresOriginalExecutable()
+    {
+        var target = Path.Combine(app, "TenveoPTZ.exe");
+        File.WriteAllText(target, "MZ old");
+
+        // The package is the executable itself: once it is moved aside, the copy finds nothing.
+        Assert.ThrowsAny<IOException>(() => installer.Install(target));
+
+        Assert.Equal("MZ old", File.ReadAllText(target));
+        Assert.False(File.Exists(target + ".update-old"));
     }
 
     [Fact]
@@ -71,16 +76,10 @@ public sealed class UpdateInstallerTests : IDisposable
         Assert.True(File.Exists(Path.Combine(app, "notes.old")));
     }
 
-    private string CreateArchive(params (string Name, string Content)[] entries)
+    private string Download(string content)
     {
-        var path = Path.Combine(root, Guid.NewGuid().ToString("N") + ".zip");
-        using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
-        foreach (var (name, content) in entries)
-        {
-            using var writer = new StreamWriter(zip.CreateEntry(name).Open());
-            writer.Write(content);
-        }
-
+        var path = Path.Combine(root, Guid.NewGuid().ToString("N") + ".exe");
+        File.WriteAllText(path, content);
         return path;
     }
 }

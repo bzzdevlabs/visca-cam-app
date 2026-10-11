@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
     End-to-end test of the automatic update: runs a copy of the application pretending to be
-    version 0.0.0.1, accepts the "Update available" prompt, then checks that the files were
-    replaced by the latest GitHub release and that the application started again. Needs
+    version 0.0.0.1, accepts the "Update available" prompt, then checks that the executable was
+    replaced by the one of the latest GitHub release and that the application started again. Needs
     network access to GitHub. Used by CI; also handy on a test PC (the copy runs in %TEMP%).
 #>
 param(
@@ -60,6 +60,14 @@ function Find-Named($Root, [string] $Name, [int] $ProcessId) {
         (New-Object System.Windows.Automation.PropertyCondition $automation::NameProperty, $Name),
         (New-Object System.Windows.Automation.PropertyCondition $automation::ProcessIdProperty, $ProcessId))
     return $Root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+}
+
+# The update installs the release's .exe: releases published before the app came as a single
+# .exe (they held a .zip) cannot be updated to, so there is nothing to test until one exists.
+$latest = Invoke-RestMethod "https://api.github.com/repos/bzzdevlabs/visca-cam-app/releases/latest" -Headers @{ "User-Agent" = "TenveoPTZ-update-test" }
+if (-not ($latest.assets | Where-Object { $_.name -like "*.exe" })) {
+    Write-Host "::notice title=Update test skipped::The latest release ($($latest.tag_name)) has no .exe to update to."
+    return
 }
 
 # Work on a copy: the update replaces the files in place.
