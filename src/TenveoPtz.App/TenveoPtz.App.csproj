@@ -10,6 +10,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Released as a single file: no TenveoPTZ.exe.config (it only repeated the target framework). -->
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,8 +20,12 @@
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 
+  <!--
+    The core library is compiled into the executable rather than referenced, so the released
+    TenveoPTZ.exe is a single file with nothing to keep next to it. Tests use the library project.
+  -->
   <ItemGroup>
-    <ProjectReference Include="..\TenveoPtz.Core\TenveoPtz.Core.csproj" />
+    <Compile Include="..\TenveoPtz.Core\**\*.cs" Exclude="..\TenveoPtz.Core\bin\**;..\TenveoPtz.Core\obj\**" LinkBase="Core" />
   </ItemGroup>
 
 </Project>
