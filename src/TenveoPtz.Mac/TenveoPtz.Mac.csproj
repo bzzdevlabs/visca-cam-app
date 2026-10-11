@@ -1,0 +1,40 @@
+<!--
+  macOS application (TenveoPTZ.app), a universal binary for Intel and Apple silicon. Needs the
+  .NET "macos" workload and Xcode, so it is built on macOS only and kept out of TenveoPtz.sln:
+    dotnet workload install macos
+    dotnet build src/TenveoPtz.Mac -c Release
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Bindings of the macOS 26 SDK (Xcode 26); the app itself runs on macOS 12 and later. -->
+    <TargetFramework>net10.0-macos26.0</TargetFramework>
+    <SupportedOSPlatformVersion>12.0</SupportedOSPlatformVersion>
+    <RuntimeIdentifiers>osx-x64;osx-arm64</RuntimeIdentifiers>
+    <RootNamespace>TenveoPtz.Mac</RootNamespace>
+    <AssemblyName>TenveoPTZ</AssemblyName>
+    <ApplicationTitle>Tenveo PTZ</ApplicationTitle>
+    <ApplicationId>io.github.bzzdevlabs.tenveoptz</ApplicationId>
+    <ApplicationDisplayVersion>$([System.Version]::Parse('$(Version)').ToString(3))</ApplicationDisplayVersion>
+    <ApplicationVersion>$(Version)</ApplicationVersion>
+    <!-- Ad-hoc signature: not notarized, but required to run on Apple silicon and to be granted camera access. -->
+    <EnableCodeSigning>true</EnableCodeSigning>
+    <CodesignKey>-</CodesignKey>
+    <CreatePackage>false</CreatePackage>
+    <!-- IOKit's USB interfaces are called through function pointers. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TenveoPtz.Core\TenveoPtz.Core.csproj" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Same VISCA serial settings as on Windows. -->
+    <Compile Include="..\TenveoPtz.App\Infrastructure\Serial\SerialPortTransport.cs" Link="Infrastructure\Serial\SerialPortTransport.cs" />
+    <BundleResource Include="Resources\AppIcon.icns" />
+  </ItemGroup>
+
+</Project>
