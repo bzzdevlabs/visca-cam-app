@@ -1,38 +1,51 @@
 # Tenveo PTZ Controller
 
-A small Windows app to drive a Tenveo (or any VISCA / UVC) PTZ camera connected by USB:
-live preview, pan/tilt/zoom/focus, and named presets.
+A small Windows and macOS app to drive a Tenveo (or any VISCA / UVC) PTZ camera connected by
+USB: live preview, pan/tilt/zoom/focus, and named presets.
 
-- **No installation, no dependencies.** Runs on the .NET Framework 4.8 that ships with
-  Windows 10 (1903 or later) and Windows 11. The download is about 100 KB.
+- **Windows: a single file, no dependencies.** Runs on the .NET Framework 4.8 that ships with
+  Windows 10 (1903 or later) and Windows 11. Use it as is, or install it with the `.msi`.
+- **macOS: one app for Intel and Apple silicon Macs**, macOS 12 Monterey or later.
 - **Two ways to control the camera:**
   - **UVC (USB)**: pan, tilt and zoom go through the same USB cable as the video. Use this
     when the camera has no serial cable connected.
   - **VISCA (COM port)**: classic Sony VISCA over the camera's RS-232/RS-485 port, through a
     USB-to-serial adapter. Presets are then stored in the camera itself.
-- **Live preview** rendered by DirectShow, so it uses almost no CPU.
+- **Live preview** rendered by the system (DirectShow on Windows, AVFoundation on macOS), so it
+  uses almost no CPU.
 
 ## Download and run
 
-1. Download the latest `TenveoPTZ-x.y.z.zip` from the
-   [Releases](../../releases) page (or a build artifact from the [Actions](../../actions) tab).
-2. Extract it to a folder (keep `TenveoPTZ.exe` and `TenveoPtz.Core.dll` together).
-3. Run `TenveoPTZ.exe`. The app is not code-signed, so Windows SmartScreen may warn you the
-   first time: choose **More info**, then **Run anyway**.
+Every [release](../../releases) has three files (build artifacts of any run are in the
+[Actions](../../actions) tab):
+
+| File | For |
+| --- | --- |
+| `TenveoPTZ-x.y.z.n.exe` | Windows, no installation: put it anywhere and run it. |
+| `TenveoPTZ-x.y.z.n.msi` | Windows installer: adds the app to the Start menu and to *Installed apps*. Installs for the current user only, so no administrator rights are needed. |
+| `TenveoPTZ-x.y.z.n.dmg` | macOS (Intel and Apple silicon): open it and drag **TenveoPTZ** onto **Applications**. |
+
+The app is not code-signed:
+
+- **Windows**: SmartScreen may warn you the first time: choose **More info**, then **Run anyway**.
+- **macOS**: the first time, macOS refuses to open it because it cannot check it for malware.
+  Open **System Settings > Privacy & Security**, scroll down to the message about TenveoPTZ
+  and choose **Open Anyway**. macOS then asks to allow the camera: choose **Allow**.
 
 ## Using it
 
 1. Pick the camera in **Camera** and the control method in **Control**:
    - *UVC (USB)* needs nothing else.
    - *VISCA (COM port)*: also pick the **Port**, **Baud** (usually 9600) and **Addr** (usually 1).
+     On macOS, USB-to-serial adapters appear as `usbserial-…` or `usbmodem…`.
 2. Press **Connect**. The app reconnects automatically the next time it starts.
 3. Move the camera with the pad (hold a button), or with the keyboard.
 
 | Keys | Action |
 | --- | --- |
 | Arrow keys (hold, combine for diagonals) | Pan / tilt |
-| `+` / `-` or Page Up / Page Down (hold) | Zoom in / out |
-| Home | Home position |
+| `+` / `-` or Page Up / Page Down (hold; Fn + ↑ / ↓ on a Mac laptop) | Zoom in / out |
+| Home (Fn + ← on a Mac laptop) | Home position |
 | `1` … `9` | Go to preset 1 … 9 |
 
 **Presets:** frame the shot, press **Save new** and give it a name. Double-click a preset (or
@@ -46,14 +59,19 @@ menu). Presets saved in UVC mode store the absolute position on the computer.
 ### Updates
 
 On start-up the app checks the [Releases](../../releases) page for a newer version. When one
-exists it asks whether to install it: **Update** downloads it, replaces the files next to
-`TenveoPTZ.exe` and restarts the app; **Not now** asks again on the next start. Without
-internet access the check is silently skipped. If the folder is not writable (e.g. under
-`Program Files`), the status line says so: download the new zip by hand instead.
+exists it asks whether to install it: **Update** downloads it, replaces the app (`TenveoPTZ.exe`
+on Windows, `TenveoPTZ.app` on macOS) and restarts it; **Not now** asks again on the next
+start. Without internet access the check is silently skipped. If the app's folder is not
+writable, the status line says so: download the new version by hand instead. On macOS the app
+must have been moved out of the disk image (to **Applications**) to update itself.
+
+Versions released as a `.zip` (before the single `.exe`) cannot update themselves to newer
+releases: download the `.exe` or `.msi` once by hand.
 
 ### Settings files
 
-Settings and presets are stored in `%APPDATA%\TenveoPTZ\` (`settings.xml`, `presets.xml`).
+Settings and presets are stored in `%APPDATA%\TenveoPTZ\` on Windows and in
+`~/Library/Application Support/TenveoPTZ/` on macOS (`settings.xml`, `presets.xml`).
 To reverse the controls of a ceiling-mounted camera, close the app and set `InvertPan` and/or
 `InvertTilt` to `true` in `settings.xml`. Set `CheckForUpdates` to `false` to turn off the
 update check.
@@ -65,14 +83,16 @@ update check.
 - **VISCA: nothing moves**: check the port, the baud rate and the address set in the camera's
   menu, and that the adapter's TX/RX wiring matches the camera's VISCA pinout.
 - **Black preview**: another program (Teams, OBS, Zoom...) is probably using the camera.
+- **macOS: "may not use the camera"**: allow TenveoPTZ in **System Settings > Privacy &
+  Security > Camera**, then restart the app.
 
 ### Logs and debug console
 
-The app keeps a log in `%APPDATA%\TenveoPTZ\logs\` (one `tenveo-yyyymmdd.log` file per day,
-the last 7 days are kept): start-up, devices found, connections, status messages and errors
-with their details.
+The app keeps a log in `%APPDATA%\TenveoPTZ\logs\` on Windows and in
+`~/Library/Logs/TenveoPTZ/` on macOS (one `tenveo-yyyymmdd.log` file per day, the last 7 days
+are kept): start-up, devices found, connections, status messages and errors with their details.
 
-Press **Ctrl+Shift+D** in the main window to open the hidden debug console:
+On Windows, press **Ctrl+Shift+D** in the main window to open the hidden debug console:
 
 - the live log;
 - **Verbose logging**: also records every VISCA packet sent and received (`TX` / `RX`) and
@@ -89,23 +109,42 @@ opens the console.
 
 ## Building from source
 
-Requires the [.NET SDK](https://dotnet.microsoft.com/download) 10 or later; works on Windows,
-macOS and Linux (the application itself runs only on Windows).
+Requires the [.NET SDK](https://dotnet.microsoft.com/download) 10 or later. The Windows app
+and the tests build on Windows, macOS and Linux:
 
 ```bash
 dotnet build --configuration Release
 dotnet test --configuration Release
 ```
 
-The app is written to `src/TenveoPtz.App/bin/Release/net48/`.
+The Windows app is written to `src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe`.
+
+The Windows installer builds on Windows only (WiX Toolset 5, restored automatically), from the
+app built above:
+
+```bash
+dotnet build src/TenveoPtz.Installer --configuration Release
+```
+
+The macOS app builds on a Mac with Xcode 26 and the .NET macOS workload; it is kept out of
+`TenveoPtz.sln` so that the solution builds everywhere:
+
+```bash
+dotnet workload install macos
+dotnet build src/TenveoPtz.Mac --configuration Release
+build/make-dmg.sh src/TenveoPtz.Mac/bin/Release/net10.0-macos26.0/TenveoPTZ.app dist/TenveoPTZ.dmg
+```
 
 ### Continuous integration and releases
 
 - **CI** (`ci.yml`): every pull request is built, unit-tested and smoke-tested on Windows (the
-  app is started in the light and dark themes). The run page shows the version, a test report
-  with every test's result, and screenshots of the window (stored on the `ci-screenshots`
-  branch, which keeps the last 30 runs).
-- **Release** (`release.yml`): merging into `main` publishes a GitHub release with the zipped app.
+  app is started in the light and dark themes, and the `.msi` is installed and uninstalled) and
+  on macOS (the app is started in the light theme as Apple silicon code and in the dark theme as
+  Intel code, through Rosetta). Both run on GitHub-hosted runners, which are free for public
+  repositories. The run page shows the version, a test report with every test's result, and
+  screenshots of the windows (stored on the `ci-screenshots` branch, which keeps the last 30 runs).
+- **Release** (`release.yml`): merging into `main` publishes a GitHub release with the Windows
+  `.exe` and `.msi` and the macOS `.dmg`.
 - **Versioning**: `major.minor.patch.build`, as Windows file versions. `major.minor.patch` comes
   from the [Conventional Commits](https://www.conventionalcommits.org/) since the last tag
   (`feat` bumps the minor version, `fix`/`perf` the patch, a breaking change the major); `build`
@@ -118,12 +157,14 @@ The app is written to `src/TenveoPtz.App/bin/Release/net48/`.
 | Project | Contents |
 | --- | --- |
 | `src/TenveoPtz.Core` | Platform-independent logic (.NET Standard 2.0): VISCA protocol, PTZ strategies, presets, settings, presenter. |
-| `src/TenveoPtz.App` | Windows shell (.NET Framework 4.8): WinForms views, DirectShow video, serial port. |
+| `src/TenveoPtz.App` | Windows shell (.NET Framework 4.8): WinForms views, DirectShow video, serial port. The core sources are compiled into it, so the app is a single `.exe`. |
+| `src/TenveoPtz.Installer` | Windows installer (WiX Toolset 5), per-user. |
+| `src/TenveoPtz.Mac` | macOS shell (.NET for macOS, universal Intel/Apple silicon): AppKit views, AVFoundation video, UVC camera controls through IOKit, serial port. |
 | `tests/TenveoPtz.Core.Tests` | xUnit tests of the core library (test-only packages, never shipped). |
 
 Design:
 
-- **Model-View-Presenter.** `MainForm` is a passive view behind `IMainView`; `MainPresenter`
+- **Model-View-Presenter.** `MainForm` (Windows) and `MainWindow` (macOS) are passive views behind `IMainView`; `MainPresenter`
   holds all behaviour and is unit-tested against a fake view.
 - **Strategy.** `IPtzController` has two implementations, `ViscaPtzController` (serial) and
   `UvcPtzController` (USB camera controls), chosen by `CameraSessionFactory`.
@@ -131,4 +172,5 @@ Design:
   sends. A `BackgroundCommandExecutor` runs them off the UI thread and coalesces superseded
   moves so the camera always follows the latest input.
 - **Repository.** `IStore<T>` / `XmlFileStore<T>` persist settings and presets atomically.
-- **Composition root.** `Program` is the only place concrete Windows services are created.
+- **Composition root.** `Program` (Windows) and `AppDelegate` (macOS) are the only places
+  concrete platform services are created.
