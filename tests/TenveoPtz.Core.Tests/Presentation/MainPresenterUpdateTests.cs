@@ -23,11 +23,11 @@ public sealed class MainPresenterUpdateTests : IDisposable
     public void Dispose() => presenter.Dispose();
 
     [Fact]
-    public void Load_AcceptedUpdateIsInstalledThenAppRestarts()
+    public void Start_AcceptedUpdateIsInstalledThenAppRestarts()
     {
         updates.Available = FakeUpdateService.Release("1.1.0.9");
 
-        view.Load();
+        view.Open();
 
         Assert.Contains("1.1.0.9", view.UpdateQuestion);
         Assert.Contains("1.0.0.5", view.UpdateQuestion);
@@ -36,12 +36,12 @@ public sealed class MainPresenterUpdateTests : IDisposable
     }
 
     [Fact]
-    public void Load_DeclinedUpdateIsNotInstalled()
+    public void Start_DeclinedUpdateIsNotInstalled()
     {
         updates.Available = FakeUpdateService.Release("1.1.0.9");
         view.UpdateAnswer = false;
 
-        view.Load();
+        view.Open();
 
         Assert.NotNull(view.UpdateQuestion);
         Assert.Null(updates.Installed);
@@ -49,32 +49,42 @@ public sealed class MainPresenterUpdateTests : IDisposable
     }
 
     [Fact]
-    public void Load_NoUpdateMeansNoQuestion()
+    public void Load_WaitsForTheWindowToBeShown()
     {
+        updates.Available = FakeUpdateService.Release("1.1.0.9");
+
         view.Load();
+
+        Assert.Equal(0, updates.CheckCount);
+    }
+
+    [Fact]
+    public void Start_NoUpdateMeansNoQuestion()
+    {
+        view.Open();
 
         Assert.Equal(1, updates.CheckCount);
         Assert.Null(view.UpdateQuestion);
     }
 
     [Fact]
-    public void Load_FailedCheckIsSilent()
+    public void Start_FailedCheckIsSilent()
     {
         updates.CheckFailure = new HttpRequestException("offline");
 
-        view.Load();
+        view.Open();
 
         Assert.Null(view.UpdateQuestion);
         Assert.False(view.StatusIsError);
     }
 
     [Fact]
-    public void Load_CheckCanBeTurnedOffInSettings()
+    public void Start_CheckCanBeTurnedOffInSettings()
     {
         settingsStore.Save(new AppSettings { CheckForUpdates = false });
         updates.Available = FakeUpdateService.Release("1.1.0.9");
 
-        view.Load();
+        view.Open();
 
         Assert.Equal(0, updates.CheckCount);
         Assert.Null(view.UpdateQuestion);
@@ -86,7 +96,7 @@ public sealed class MainPresenterUpdateTests : IDisposable
         updates.Available = FakeUpdateService.Release("1.1.0.9");
         updates.InstallFailure = new UnauthorizedAccessException("Access denied.");
 
-        view.Load();
+        view.Open();
 
         Assert.True(view.StatusIsError);
         Assert.Contains("Access denied.", view.Status);

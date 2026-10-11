@@ -53,6 +53,7 @@ public sealed partial class MainPresenter : IDisposable
         uiContext = SynchronizationContext.Current;
 
         view.ViewLoaded += (_, _) => Initialize();
+        view.ViewShown += (_, _) => CheckForUpdates();
         view.ViewClosing += (_, _) => Shutdown();
         view.RefreshDevicesRequested += (_, _) => RefreshDevices();
         view.ConnectRequested += (_, _) => Connect();
@@ -85,8 +86,6 @@ public sealed partial class MainPresenter : IDisposable
         {
             view.ShowStatus("Choose the camera and how to control it, then press Connect.", false);
         }
-
-        CheckForUpdates();
     }
 
     private void Shutdown()

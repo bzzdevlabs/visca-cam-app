@@ -13,6 +13,8 @@ internal sealed class FakeView : IMainView
 {
     public event EventHandler? ViewLoaded;
 
+    public event EventHandler? ViewShown;
+
     public event EventHandler? ViewClosing;
 
     public event EventHandler? RefreshDevicesRequested;
@@ -100,6 +102,13 @@ internal sealed class FakeView : IMainView
     public void Restart() => Restarted = true;
 
     public void Load() => ViewLoaded?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>Loads then shows the window, as on start-up.</summary>
+    public void Open()
+    {
+        Load();
+        ViewShown?.Invoke(this, EventArgs.Empty);
+    }
 
     public void Close() => ViewClosing?.Invoke(this, EventArgs.Empty);
 
