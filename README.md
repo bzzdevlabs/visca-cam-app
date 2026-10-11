@@ -3,6 +3,8 @@
 A small Windows and macOS app to drive a Tenveo (or any VISCA / UVC) PTZ camera connected by
 USB: live preview, pan/tilt/zoom/focus, and named presets.
 
+**Documentation:** <https://bzzdevlabs.github.io/visca-cam-app/>
+
 - **Windows: a single file, no dependencies.** Runs on the .NET Framework 4.8 that ships with
   Windows 10 (1903 or later) and Windows 11. Use it as is, or install it with the `.msi`.
 - **macOS: one app for Intel and Apple silicon Macs**, macOS 12 Monterey or later.
