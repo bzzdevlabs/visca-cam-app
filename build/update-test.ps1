@@ -11,7 +11,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.Forms
 $automation = [System.Windows.Automation.AutomationElement]
 
 function Wait-For([scriptblock] $Condition, [string] $What) {
@@ -47,7 +47,10 @@ try {
     Write-Host "Prompt shown."
     $button = Find-Named $dialog "Update" $process.Id
     if (-not $button) { throw "The prompt has no 'Update' button." }
-    $button.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+    # The custom-drawn button exposes no Invoke pattern: focus it and press Space, like a keyboard user.
+    $button.SetFocus()
+    Start-Sleep -Milliseconds 300
+    [System.Windows.Forms.SendKeys]::SendWait(" ")
 
     if (-not $process.WaitForExit($TimeoutSeconds * 1000)) { throw "The application did not close to install the update." }
     Write-Host "Closed for the update (exit code $($process.ExitCode))."
