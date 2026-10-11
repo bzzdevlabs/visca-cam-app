@@ -2,6 +2,10 @@ name: CI
 
 on:
   pull_request:
+    paths-ignore: # Documentation only: built and published by docs.yml.
+      - website/**
+      - '**.md'
+      - .github/workflows/docs.yml
   workflow_dispatch:
 
 permissions:
