@@ -75,6 +75,7 @@ fi
     name="$(basename "$image")"
     label="${name%.png}"
     label="${label#screenshot-}"
+    label="${label//-/ }"
     echo "### ${label^}"
     echo
     echo "![${label} screenshot](https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${branch}/runs/${run}/${name})"

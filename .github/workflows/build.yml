@@ -1,6 +1,7 @@
 name: Build
 
-# Reusable: computes the version, builds, tests and smoke-tests the app on Windows, uploads it,
+# Reusable: computes the version, builds, tests and smoke-tests the app on Windows (single .exe
+# and .msi installer) and on macOS (universal .dmg for Intel and Apple silicon), uploads them,
 # and reports test results and screenshots on the run page (job summaries).
 on:
   workflow_call:
@@ -11,9 +12,12 @@ on:
       release:
         description: Whether the commits since the last release warrant a new release.
         value: ${{ jobs.build.outputs.release }}
-      artifact:
-        description: Name of the uploaded application artifact.
+      windows-artifact:
+        description: Name of the uploaded Windows artifact (.exe and .msi).
         value: ${{ jobs.build.outputs.artifact }}
+      macos-artifact:
+        description: Name of the uploaded macOS artifact (.dmg).
+        value: ${{ jobs.macos.outputs.artifact }}
 
 permissions:
   contents: read
@@ -28,7 +32,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       release: ${{ steps.version.outputs.release }}
-      artifact: TenveoPTZ-${{ steps.version.outputs.version }}
+      artifact: TenveoPTZ-${{ steps.version.outputs.version }}-windows
     steps:
       - uses: actions/checkout@v7
         with:
@@ -70,18 +74,39 @@ jobs:
         shell: pwsh
         run: ./build/update-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe -ScreenshotDir dist/screenshots
 
-      - name: Collect application files
+      - name: Build installer
+        run: dotnet build src/TenveoPtz.Installer --configuration Release -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Test installer (install, check, uninstall)
         shell: pwsh
         run: |
-          $bin = "src/TenveoPtz.App/bin/Release/net48"
-          New-Item -ItemType Directory -Force dist/TenveoPTZ | Out-Null
-          Copy-Item "$bin/TenveoPTZ.exe", "$bin/TenveoPTZ.exe.config", "$bin/TenveoPtz.Core.dll", README.md -Destination dist/TenveoPTZ
+          $msi = (Get-ChildItem src/TenveoPtz.Installer/bin -Recurse -Filter TenveoPTZ.msi | Select-Object -First 1).FullName
+          if (-not $msi) { throw "The installer was not built." }
+          $installed = Join-Path $env:LOCALAPPDATA "Programs\TenveoPTZ\TenveoPTZ.exe"
+          $install = Start-Process msiexec.exe -ArgumentList "/i", "`"$msi`"", "/qn", "/l*v", "dist/msi-install.log" -Wait -PassThru
+          if ($install.ExitCode -ne 0) { Get-Content dist/msi-install.log -Tail 40; throw "Install failed with code $($install.ExitCode)." }
+          $version = (Get-Item $installed).VersionInfo.FileVersion
+          if ($version -ne "${{ steps.version.outputs.version }}") { throw "Installed version $version, expected ${{ steps.version.outputs.version }}." }
+          Write-Host "Installed $installed ($version)."
+          $uninstall = Start-Process msiexec.exe -ArgumentList "/x", "`"$msi`"", "/qn" -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) { throw "Uninstall failed with code $($uninstall.ExitCode)." }
+          if (Test-Path $installed) { throw "Uninstall left $installed behind." }
+          Write-Host "Uninstalled cleanly."
+
+      - name: Collect release files
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          New-Item -ItemType Directory -Force dist/release | Out-Null
+          Copy-Item src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe "dist/release/TenveoPTZ-$version.exe"
+          $msi = Get-ChildItem src/TenveoPtz.Installer/bin -Recurse -Filter TenveoPTZ.msi | Select-Object -First 1
+          Copy-Item $msi.FullName "dist/release/TenveoPTZ-$version.msi"
 
       - name: Upload application
         uses: actions/upload-artifact@v7
         with:
-          name: TenveoPTZ-${{ steps.version.outputs.version }}
-          path: dist/TenveoPTZ/
+          name: TenveoPTZ-${{ steps.version.outputs.version }}-windows
+          path: dist/release/
           if-no-files-found: error
 
       # Transport to the screenshots job only; the images are shown on the run page.
@@ -89,14 +114,68 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: screenshots
+          name: screenshots-windows
+          path: dist/screenshots/
+          if-no-files-found: ignore
+          retention-days: 1
+
+  macos:
+    # Apple silicon runner; the app is a universal binary and the smoke test also runs its Intel
+    # half through Rosetta.
+    runs-on: macos-26
+    outputs:
+      artifact: TenveoPTZ-${{ steps.version.outputs.version }}-macos
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Tags and full history are needed to compute the version.
+
+      - name: Compute version
+        id: version
+        run: bash build/version.sh | tee -a "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      # The macOS 26 bindings are made for Xcode 26.0; use it when the runner image has it.
+      - name: Select Xcode
+        run: |
+          xcode="$(ls -d /Applications/Xcode_26.0*.app 2>/dev/null | sort -V | tail -n 1 || true)"
+          if [[ -n "$xcode" ]]; then sudo xcode-select --switch "$xcode"; fi
+          xcodebuild -version
+
+      - name: Install the .NET macOS workload
+        run: dotnet workload install macos
+
+      - name: Build
+        run: dotnet build src/TenveoPtz.Mac --configuration Release -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Smoke test (start the app in light and dark themes, Apple silicon and Intel)
+        run: bash build/smoke-test-macos.sh src/TenveoPtz.Mac/bin/Release/net10.0-macos26.0/TenveoPTZ.app dist/screenshots --sample-presets
+
+      - name: Make disk image
+        run: bash build/make-dmg.sh src/TenveoPtz.Mac/bin/Release/net10.0-macos26.0/TenveoPTZ.app "dist/release/TenveoPTZ-${{ steps.version.outputs.version }}.dmg"
+
+      - name: Upload application
+        uses: actions/upload-artifact@v7
+        with:
+          name: TenveoPTZ-${{ steps.version.outputs.version }}-macos
+          path: dist/release/
+          if-no-files-found: error
+
+      - name: Hand over screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots-macos
           path: dist/screenshots/
           if-no-files-found: ignore
           retention-days: 1
 
   screenshots:
-    needs: build
-    if: always() && needs.build.result != 'skipped'
+    needs: [build, macos]
+    if: always() && (needs.build.result != 'skipped' || needs.macos.result != 'skipped')
     runs-on: ubuntu-latest
     # Separate job so that write access (needed to push to the ci-screenshots branch) is limited
     # to this short script: the build job, which runs the app and its tests, stays read-only.
@@ -111,7 +190,8 @@ jobs:
       - uses: actions/download-artifact@v8
         continue-on-error: true
         with:
-          name: screenshots
+          pattern: screenshots-*
+          merge-multiple: true
           path: screenshots
 
       - name: Show screenshots on the run page
