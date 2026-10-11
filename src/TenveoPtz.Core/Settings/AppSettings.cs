@@ -18,4 +18,7 @@ public sealed class AppSettings
 
     /// <summary>Reverses tilt, e.g. for a ceiling-mounted camera.</summary>
     public bool InvertTilt { get; set; }
+
+    /// <summary>Looks for a newer release on start-up and offers to install it.</summary>
+    public bool CheckForUpdates { get; set; } = true;
 }

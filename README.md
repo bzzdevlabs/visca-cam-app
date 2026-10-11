@@ -43,11 +43,20 @@ Presets saved in VISCA mode live in the camera's memory (slots 1 to 89; slots fr
 are avoided because many cameras use them for special functions such as opening the on-screen
 menu). Presets saved in UVC mode store the absolute position on the computer.
 
+### Updates
+
+On start-up the app checks the [Releases](../../releases) page for a newer version. When one
+exists it asks whether to install it: **Update** downloads it, replaces the files next to
+`TenveoPTZ.exe` and restarts the app; **Not now** asks again on the next start. Without
+internet access the check is silently skipped. If the folder is not writable (e.g. under
+`Program Files`), the status line says so: download the new zip by hand instead.
+
 ### Settings files
 
 Settings and presets are stored in `%APPDATA%\TenveoPTZ\` (`settings.xml`, `presets.xml`).
 To reverse the controls of a ceiling-mounted camera, close the app and set `InvertPan` and/or
-`InvertTilt` to `true` in `settings.xml`.
+`InvertTilt` to `true` in `settings.xml`. Set `CheckForUpdates` to `false` to turn off the
+update check.
 
 ## Troubleshooting
 

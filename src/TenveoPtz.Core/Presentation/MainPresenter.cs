@@ -6,6 +6,7 @@ using TenveoPtz.Core.Session;
 using TenveoPtz.Core.Settings;
 using TenveoPtz.Core.Storage;
 using TenveoPtz.Core.Transport;
+using TenveoPtz.Core.Updates;
 using TenveoPtz.Core.Video;
 
 namespace TenveoPtz.Core.Presentation;
@@ -23,6 +24,8 @@ public sealed partial class MainPresenter : IDisposable
     private readonly ICameraSessionFactory sessionFactory;
     private readonly IStore<AppSettings> settingsStore;
     private readonly IStore<PresetBook> presetStore;
+    private readonly IUpdateService? updates;
+    private readonly Version currentVersion;
     private readonly SynchronizationContext? uiContext;
 
     private AppSettings settings = new();
@@ -35,7 +38,9 @@ public sealed partial class MainPresenter : IDisposable
         ISerialPortProvider serialPorts,
         ICameraSessionFactory sessionFactory,
         IStore<AppSettings> settingsStore,
-        IStore<PresetBook> presetStore)
+        IStore<PresetBook> presetStore,
+        IUpdateService? updates = null,
+        Version? currentVersion = null)
     {
         this.view = view ?? throw new ArgumentNullException(nameof(view));
         this.videoService = videoService ?? throw new ArgumentNullException(nameof(videoService));
@@ -43,6 +48,8 @@ public sealed partial class MainPresenter : IDisposable
         this.sessionFactory = sessionFactory ?? throw new ArgumentNullException(nameof(sessionFactory));
         this.settingsStore = settingsStore ?? throw new ArgumentNullException(nameof(settingsStore));
         this.presetStore = presetStore ?? throw new ArgumentNullException(nameof(presetStore));
+        this.updates = updates;
+        this.currentVersion = currentVersion ?? new Version(0, 0);
         uiContext = SynchronizationContext.Current;
 
         view.ViewLoaded += (_, _) => Initialize();
@@ -78,10 +85,13 @@ public sealed partial class MainPresenter : IDisposable
         {
             view.ShowStatus("Choose the camera and how to control it, then press Connect.", false);
         }
+
+        CheckForUpdates();
     }
 
     private void Shutdown()
     {
+        closing = true;
         settings.Connection = view.ConnectionOptions.Clone();
         settings.Speed = view.Speed;
         settings.AlwaysOnTop = view.AlwaysOnTop;
