@@ -14,7 +14,7 @@ public sealed class ReleaseInfo
 
     public Version Version { get; }
 
-    /// <summary>The zip archive holding the application files.</summary>
+    /// <summary>The release asset holding the application for this platform.</summary>
     public Uri DownloadUrl { get; }
 
     /// <summary>Human-readable release page (release notes).</summary>

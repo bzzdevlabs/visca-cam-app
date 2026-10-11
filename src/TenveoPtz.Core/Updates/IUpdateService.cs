@@ -10,7 +10,7 @@ public interface IUpdateService
     Task<ReleaseInfo?> FindUpdateAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Downloads <paramref name="release"/> and replaces the application files. The running
+    /// Downloads <paramref name="release"/> and replaces the application. The running
     /// version keeps working until it exits; the next start runs the new version.
     /// </summary>
     Task InstallAsync(ReleaseInfo release, CancellationToken cancellationToken = default);

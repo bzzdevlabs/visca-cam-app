@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TenveoPtz.Core.Updates;
@@ -13,7 +13,8 @@ namespace TenveoPtz.Core.Tests.Updates;
 public sealed class GitHubUpdateServiceTests : IDisposable
 {
     private const string LatestUrl = "https://api.github.com/repos/owner/repo/releases/latest";
-    private const string ZipUrl = "https://github.com/owner/repo/releases/download/v0.3.0.50/TenveoPTZ-0.3.0.50.zip";
+    private const string ExeUrl = "https://github.com/owner/repo/releases/download/v0.3.0.50/TenveoPTZ-0.3.0.50.exe";
+    private const string DmgUrl = "https://github.com/owner/repo/releases/download/v0.3.0.50/TenveoPTZ-0.3.0.50.dmg";
 
     private readonly FakeHandler handler = new();
     private readonly HttpClient http;
@@ -36,7 +37,7 @@ public sealed class GitHubUpdateServiceTests : IDisposable
 
         Assert.NotNull(update);
         Assert.Equal(new Version(0, 3, 0, 50), update!.Version);
-        Assert.Equal(new Uri(ZipUrl), update.DownloadUrl);
+        Assert.Equal(new Uri(ExeUrl), update.DownloadUrl);
         Assert.Equal(new Uri("https://github.com/owner/repo/releases/tag/v0.3.0.50"), update.PageUrl);
         Assert.Contains("TenveoPTZ", handler.Requests[0].Headers.UserAgent.ToString());
     }
@@ -61,11 +62,28 @@ public sealed class GitHubUpdateServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task FindUpdate_IgnoresReleaseWithoutZip()
+    public async Task FindUpdate_IgnoresReleaseWithoutExecutable()
     {
-        handler.Json(LatestUrl, Release("v0.3.0.50").Replace(".zip", ".tar.gz"));
+        handler.Json(LatestUrl, Release("v0.3.0.50").Replace("50.exe", "50.zip"));
 
         Assert.Null(await Service("0.2.0.41").FindUpdateAsync());
+    }
+
+    [Fact]
+    public async Task FindUpdate_PicksTheArchiveOfItsPlatform()
+    {
+        handler.Json(LatestUrl, Release("v0.3.0.50"));
+
+        Assert.Equal(new Uri(ExeUrl), (await Service("0.2.0.41").FindUpdateAsync())!.DownloadUrl);
+        Assert.Equal(new Uri(DmgUrl), (await Service("0.2.0.41", ReleasePlatform.MacOS).FindUpdateAsync())!.DownloadUrl);
+    }
+
+    [Fact]
+    public async Task FindUpdate_IgnoresReleaseWithoutArchiveForThePlatform()
+    {
+        handler.Json(LatestUrl, Release("v0.3.0.50").Replace(".dmg", ".pkg"));
+
+        Assert.Null(await Service("0.2.0.41", ReleasePlatform.MacOS).FindUpdateAsync());
     }
 
     [Fact]
@@ -89,12 +107,12 @@ public sealed class GitHubUpdateServiceTests : IDisposable
     {
         File.WriteAllText(Path.Combine(app, "TenveoPTZ.exe"), "old");
         handler.Json(LatestUrl, Release("v0.3.0.50"));
-        handler.Responses[ZipUrl] = () => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Archive("TenveoPTZ.exe", "new")) };
+        handler.Responses[ExeUrl] = () => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Encoding.ASCII.GetBytes("MZ new")) };
         var service = Service("0.2.0.41");
 
         await service.InstallAsync((await service.FindUpdateAsync())!);
 
-        Assert.Equal("new", File.ReadAllText(Path.Combine(app, "TenveoPTZ.exe")));
+        Assert.Equal("MZ new", File.ReadAllText(Path.Combine(app, "TenveoPTZ.exe")));
     }
 
     [Theory]
@@ -104,8 +122,8 @@ public sealed class GitHubUpdateServiceTests : IDisposable
     public void ParseTag_ReadsVersions(string tag, int major, int minor, int build, int revision) =>
         Assert.Equal(new Version(major, minor, build, revision), GitHubUpdateService.ParseTag(tag));
 
-    private GitHubUpdateService Service(string version) =>
-        new(http, "owner/repo", Version.Parse(version), new UpdateInstaller(app, "TenveoPTZ.exe"));
+    private GitHubUpdateService Service(string version, ReleasePlatform platform = ReleasePlatform.Windows) =>
+        new(http, "owner/repo", Version.Parse(version), new UpdateInstaller(app, "TenveoPTZ.exe"), platform);
 
     private static string Release(string tag) => $$"""
         {
@@ -115,22 +133,12 @@ public sealed class GitHubUpdateServiceTests : IDisposable
           "prerelease": false,
           "body": "## What's Changed",
           "assets": [
-            { "name": "TenveoPTZ-0.3.0.50.zip", "size": 81936, "browser_download_url": "{{ZipUrl}}" }
+            { "name": "TenveoPTZ-0.3.0.50.dmg", "size": 9481936, "browser_download_url": "{{DmgUrl}}" },
+            { "name": "TenveoPTZ-0.3.0.50.msi", "size": 245760, "browser_download_url": "https://github.com/owner/repo/releases/download/v0.3.0.50/TenveoPTZ-0.3.0.50.msi" },
+            { "name": "TenveoPTZ-0.3.0.50.exe", "size": 81936, "browser_download_url": "{{ExeUrl}}" }
           ]
         }
         """;
-
-    private static byte[] Archive(string name, string content)
-    {
-        using var buffer = new MemoryStream();
-        using (var zip = new ZipArchive(buffer, ZipArchiveMode.Create, leaveOpen: true))
-        using (var writer = new StreamWriter(zip.CreateEntry(name).Open()))
-        {
-            writer.Write(content);
-        }
-
-        return buffer.ToArray();
-    }
 
     private sealed class FakeHandler : HttpMessageHandler
     {

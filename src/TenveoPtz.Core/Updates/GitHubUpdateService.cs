@@ -12,25 +12,29 @@ namespace TenveoPtz.Core.Updates;
 
 /// <summary>
 /// Update source backed by the GitHub releases of a repository. The latest release's tag
-/// (<c>v1.2.3.45</c>) gives its version and its <c>.zip</c> asset holds the application files.
+/// (<c>v1.2.3.45</c>) gives its version and its asset for the platform (see
+/// <see cref="ReleasePackages"/>) holds the application.
 /// </summary>
 public sealed class GitHubUpdateService : IUpdateService
 {
     private readonly HttpClient http;
     private readonly string repository;
     private readonly Version currentVersion;
-    private readonly UpdateInstaller installer;
+    private readonly IPackageInstaller installer;
+    private readonly ReleasePlatform platform;
 
     /// <param name="http">Client used for the GitHub API and the download.</param>
     /// <param name="repository">Repository as <c>owner/name</c>.</param>
     /// <param name="currentVersion">Version of the running application.</param>
     /// <param name="installer">Replaces the application files with the downloaded ones.</param>
-    public GitHubUpdateService(HttpClient http, string repository, Version currentVersion, UpdateInstaller installer)
+    /// <param name="platform">Platform whose release asset is downloaded.</param>
+    public GitHubUpdateService(HttpClient http, string repository, Version currentVersion, IPackageInstaller installer, ReleasePlatform platform = ReleasePlatform.Windows)
     {
         this.http = http ?? throw new ArgumentNullException(nameof(http));
         this.repository = string.IsNullOrWhiteSpace(repository) ? throw new ArgumentException("A repository is required.", nameof(repository)) : repository;
         this.currentVersion = Normalize(currentVersion ?? throw new ArgumentNullException(nameof(currentVersion)));
         this.installer = installer ?? throw new ArgumentNullException(nameof(installer));
+        this.platform = platform;
     }
 
     public async Task<ReleaseInfo?> FindUpdateAsync(CancellationToken cancellationToken = default)
@@ -58,22 +62,22 @@ public sealed class GitHubUpdateService : IUpdateService
             throw new ArgumentNullException(nameof(release));
         }
 
-        var archive = Path.Combine(Path.GetTempPath(), $"TenveoPTZ-{release.Version}-{Guid.NewGuid():N}.zip");
+        var package = Path.Combine(Path.GetTempPath(), $"TenveoPTZ-{release.Version}-{Guid.NewGuid():N}{ReleasePackages.ExtensionFor(platform)}");
         try
         {
             using (var response = await http.GetAsync(release.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
                 using var source = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                using var target = File.Create(archive);
+                using var target = File.Create(package);
                 await source.CopyToAsync(target, 81920, cancellationToken).ConfigureAwait(false);
             }
 
-            await Task.Run(() => installer.Install(archive), cancellationToken).ConfigureAwait(false);
+            await Task.Run(() => installer.Install(package), cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            TryDelete(archive);
+            TryDelete(package);
         }
     }
 
@@ -92,7 +96,7 @@ public sealed class GitHubUpdateService : IUpdateService
         }
 
         var version = ParseTag(release.TagName);
-        var asset = release.Assets?.FirstOrDefault(a => a.Name?.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) == true);
+        var asset = release.Assets?.FirstOrDefault(a => ReleasePackages.IsPackageFor(platform, a.Name));
         if (version is null || version <= currentVersion
             || !Uri.TryCreate(asset?.DownloadUrl, UriKind.Absolute, out var download)
             || !Uri.TryCreate(release.PageUrl, UriKind.Absolute, out var page))
