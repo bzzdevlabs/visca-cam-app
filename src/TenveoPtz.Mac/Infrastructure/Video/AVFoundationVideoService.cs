@@ -20,11 +20,11 @@ internal sealed class AVFoundationVideoService : IVideoService
     public IReadOnlyList<VideoDevice> GetDevices() =>
         FindCaptureDevices().Select((device, index) => new VideoDevice(index, device.LocalizedName)).ToList();
 
-    public IVideoSession Start(VideoDevice device)
+    public IVideoSession Start(VideoDevice device, bool preview)
     {
         var capture = FindCaptureDevices().FirstOrDefault(d => d.LocalizedName == device.Name)
             ?? throw new InvalidOperationException($"Video device \"{device.Name}\" is not connected.");
-        return new AVFoundationVideoSession(device, capture, host);
+        return new AVFoundationVideoSession(device, capture, host, preview);
     }
 
     /// <summary>Built-in and USB cameras (and iPhones used as Continuity Cameras).</summary>

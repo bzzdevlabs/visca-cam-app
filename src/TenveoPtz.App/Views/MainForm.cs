@@ -92,7 +92,12 @@ internal sealed partial class MainForm : Form, IMainView
     public void ShowConnected(bool connected)
     {
         connectionBar.ShowConnected(connected);
-        videoSurface.ShowPlaceholder = !connected;
+        var previewing = connected && connectionBar.Options.ShowPreview;
+        videoSurface.PlaceholderTitle = connected ? "Preview off" : "No video";
+        videoSurface.PlaceholderText = connected
+            ? "The camera is free for other apps such as Zoom. Disconnect to turn the preview back on."
+            : "Choose the camera above, then select Connect.";
+        videoSurface.ShowPlaceholder = !previewing;
     }
 
     public void ShowPresets(IReadOnlyList<Preset> presets, Preset? selected) => presetPanel.ShowPresets(presets, selected);

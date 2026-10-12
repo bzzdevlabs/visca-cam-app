@@ -7,5 +7,9 @@ public interface IVideoService
 {
     IReadOnlyList<VideoDevice> GetDevices();
 
-    IVideoSession Start(VideoDevice device);
+    /// <param name="preview">
+    /// <c>false</c> opens the device for its camera controls only, without receiving its video,
+    /// so other applications can use the camera at the same time.
+    /// </param>
+    IVideoSession Start(VideoDevice device, bool preview);
 }

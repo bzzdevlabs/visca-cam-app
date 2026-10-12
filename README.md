@@ -84,7 +84,8 @@ update check.
   controls. Connect its RS-232 port through a USB-to-serial adapter and use VISCA.
 - **VISCA: nothing moves**: check the port, the baud rate and the address set in the camera's
   menu, and that the adapter's TX/RX wiring matches the camera's VISCA pinout.
-- **Black preview**: another program (Teams, OBS, Zoom...) is probably using the camera.
+- **Black preview**: another program (Teams, OBS, Zoom...) is probably using the camera. To
+  control the camera while that program shows its video, turn **Preview** off, then Connect.
 - **macOS: "may not use the camera"**: allow Tenveo PTZ in **System Settings > Privacy &
   Security > Camera**, then restart the app.
 

@@ -14,6 +14,14 @@ title: Connect to the camera
 The app remembers the camera and the control method, and reconnects automatically the next time
 it starts.
 
+## Use the camera in Zoom, Teams... at the same time
+
+On Windows, only one application at a time can receive a camera's video. To control the camera
+from Tenveo PTZ while Zoom, Teams or OBS shows its video, turn **Preview** off before pressing
+**Connect**: the app then opens the camera for its pan/tilt/zoom controls only and leaves the
+video to the other application. (On macOS, several applications can share the camera, so the
+preview can stay on.)
+
 ## Which control method?
 
 | | UVC (USB) | VISCA (COM port) |

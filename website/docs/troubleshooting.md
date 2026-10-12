@@ -19,7 +19,9 @@ adapter's TX/RX wiring matches the camera's VISCA pinout.
 
 ### Black preview
 
-Another program (Teams, OBS, Zoom...) is probably using the camera.
+Another program (Teams, OBS, Zoom...) is probably using the camera. To control the camera
+while that program shows its video, turn **Preview** off, then press **Connect** (see
+[Use the camera in Zoom, Teams...](./usage/connect.md#use-the-camera-in-zoom-teams-at-the-same-time)).
 
 ### macOS: “may not use the camera”
 

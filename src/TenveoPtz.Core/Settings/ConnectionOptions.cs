@@ -16,5 +16,11 @@ public sealed class ConnectionOptions
     /// <summary>VISCA camera address (1..7).</summary>
     public int Address { get; set; } = 1;
 
+    /// <summary>
+    /// Shows the live video. When off, the camera's video stays free for other applications
+    /// (Zoom, Teams...): on Windows only one application at a time can receive it.
+    /// </summary>
+    public bool ShowPreview { get; set; } = true;
+
     public ConnectionOptions Clone() => (ConnectionOptions)MemberwiseClone();
 }

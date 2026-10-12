@@ -7,7 +7,7 @@ namespace TenveoPtz.Core.Session;
 /// <summary>An open connection to the camera: live video plus a PTZ control strategy.</summary>
 public sealed class CameraSession : IDisposable
 {
-    /// <param name="video">Live preview, or <c>null</c> when no video device was selected. Ownership is transferred.</param>
+    /// <param name="video">Video device, or <c>null</c> when none is open. Ownership is transferred.</param>
     /// <param name="ptz">PTZ strategy. Ownership is transferred.</param>
     public CameraSession(IVideoSession? video, IPtzController ptz)
     {
