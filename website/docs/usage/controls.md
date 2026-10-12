@@ -15,9 +15,12 @@ by hand with **Near** and **Far**.
 | Keys | Action |
 | --- | --- |
 | Arrow keys (hold, combine for diagonals) | Pan / tilt |
-| `+` / `-` or Page Up / Page Down (hold; Fn + ↑ / ↓ on a Mac laptop) | Zoom in / out |
+| `+` / `-` (main keyboard or numeric keypad) or Page Up / Page Down (hold; Fn + ↑ / ↓ on a Mac laptop) | Zoom in / out |
 | Home (Fn + ← on a Mac laptop) | Home position |
 | `1` … `9` | Go to preset 1 … 9 |
+
+Holding a key moves the camera continuously until you release it. The keys keep driving the
+camera after you click the speed slider or the preset list; only text fields take them.
 
 ## Ceiling-mounted cameras
 

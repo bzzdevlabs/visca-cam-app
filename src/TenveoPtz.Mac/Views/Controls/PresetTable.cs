@@ -13,6 +13,10 @@ internal sealed class PresetTable : NSTableView
     private const ushort EnterKey = 76;
     private const ushort BackspaceKey = 51;
     private const ushort ForwardDeleteKey = 117;
+    private const ushort PageUpKey = 116;
+    private const ushort PageDownKey = 121;
+    private const ushort LeftArrow = 123;
+    private const ushort UpArrow = 126;
 
     private readonly PresetSource source = new();
 
@@ -69,10 +73,23 @@ internal sealed class PresetTable : NSTableView
                 DeleteRequested?.Invoke(this, EventArgs.Empty);
                 break;
             default:
-                base.KeyDown(theEvent);
+                if (IsCameraKey(theEvent) && Window is { } window)
+                {
+                    // Arrows, Page Up/Down and +/- drive the camera even when the list has focus.
+                    window.KeyDown(theEvent);
+                }
+                else
+                {
+                    base.KeyDown(theEvent);
+                }
+
                 break;
         }
     }
+
+    private static bool IsCameraKey(NSEvent theEvent) =>
+        theEvent.KeyCode is >= LeftArrow and <= UpArrow or PageUpKey or PageDownKey
+        || theEvent.CharactersIgnoringModifiers is "+" or "=" or "-" or "_";
 
     private static int IndexOf(IReadOnlyList<Preset> presets, Preset preset)
     {

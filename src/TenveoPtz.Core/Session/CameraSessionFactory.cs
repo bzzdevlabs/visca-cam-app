@@ -13,8 +13,11 @@ namespace TenveoPtz.Core.Session;
 /// <summary>Builds a <see cref="CameraSession"/>, choosing the PTZ strategy from the connection mode.</summary>
 public sealed class CameraSessionFactory : ICameraSessionFactory
 {
-    /// <summary>Interval between position steps when emulating continuous UVC moves.</summary>
-    public static readonly TimeSpan UvcTickInterval = TimeSpan.FromMilliseconds(80);
+    /// <summary>
+    /// Interval between position steps when emulating continuous UVC moves: short, so the camera
+    /// gets many small steps and the motion looks continuous rather than jerky.
+    /// </summary>
+    public static readonly TimeSpan UvcTickInterval = TimeSpan.FromMilliseconds(40);
 
     private readonly IVideoService videoService;
     private readonly ISerialPortProvider serialPorts;

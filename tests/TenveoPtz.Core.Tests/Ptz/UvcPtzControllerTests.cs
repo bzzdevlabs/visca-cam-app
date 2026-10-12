@@ -34,7 +34,7 @@ public sealed class UvcPtzControllerTests
         axes.Values[CameraAxis.Pan] = -170;
         controller.Move(Motion.Positive, Motion.None, 1.0);
 
-        // 80 ms ticks: 100 ticks is 8 seconds, still short of the 340 unit range.
+        // 40 ms ticks: 100 ticks is 4 seconds, still short of the 340 unit range.
         for (var i = 0; i < 100; i++)
         {
             ticker.Fire();

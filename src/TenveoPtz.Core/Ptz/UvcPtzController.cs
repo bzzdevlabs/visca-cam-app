@@ -13,8 +13,11 @@ namespace TenveoPtz.Core.Ptz;
 /// </summary>
 public sealed class UvcPtzController : IPtzController
 {
-    /// <summary>Fraction of an axis range travelled per tick at full speed (about 6 % of the range per second).</summary>
-    internal const double FullSpeedStepFraction = 0.005;
+    /// <summary>
+    /// Fraction of an axis range travelled per tick at full speed: about 6 % of the range per
+    /// second with the 40 ms ticks of <see cref="Session.CameraSessionFactory.UvcTickInterval"/>.
+    /// </summary>
+    internal const double FullSpeedStepFraction = 0.0025;
 
     /// <summary>Fraction of full speed used at the slowest speed setting.</summary>
     internal const double MinimumSpeedFactor = 0.05;
