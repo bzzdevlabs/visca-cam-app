@@ -33,6 +33,9 @@ public interface IMainView
 
     event EventHandler<MotionEventArgs>? ZoomRequested;
 
+    /// <summary>The speed slider moved; <see cref="Speed"/> holds the new value.</summary>
+    event EventHandler? SpeedChanged;
+
     event EventHandler<MotionEventArgs>? FocusRequested;
 
     event EventHandler<ToggleEventArgs>? AutoFocusRequested;

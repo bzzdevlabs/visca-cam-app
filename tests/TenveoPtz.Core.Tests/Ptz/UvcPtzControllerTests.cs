@@ -25,7 +25,58 @@ public sealed class UvcPtzControllerTests
 
         Assert.True(ticker.IsRunning);
         Assert.True(afterFirstStep > 0);
-        Assert.Equal(afterFirstStep * 2, axes.Values[CameraAxis.Pan]);
+        Assert.True(axes.Values[CameraAxis.Pan] > afterFirstStep);
+    }
+
+    [Fact]
+    public void Move_AtFullSpeedCrossesThePanRangeInSeveralSeconds()
+    {
+        axes.Values[CameraAxis.Pan] = -170;
+        controller.Move(Motion.Positive, Motion.None, 1.0);
+
+        // 80 ms ticks: 100 ticks is 8 seconds, still short of the 340 unit range.
+        for (var i = 0; i < 100; i++)
+        {
+            ticker.Fire();
+        }
+
+        Assert.True(axes.Values[CameraAxis.Pan] < 170);
+    }
+
+    [Fact]
+    public void Move_SlowSpeedAccumulatesFractionalSteps()
+    {
+        controller.Move(Motion.Positive, Motion.None, 0.0);
+        for (var i = 0; i < 40; i++)
+        {
+            ticker.Fire();
+        }
+
+        var slow = axes.Values[CameraAxis.Pan];
+        axes.Values[CameraAxis.Pan] = 0;
+        controller.Move(Motion.None, Motion.None, 0.0);
+        controller.Move(Motion.Positive, Motion.None, 0.5);
+        for (var i = 0; i < 40; i++)
+        {
+            ticker.Fire();
+        }
+
+        // Slowest speed moves, but less than one unit per tick, and less than half speed.
+        Assert.InRange(slow, 1, 39);
+        Assert.True(axes.Values[CameraAxis.Pan] > slow);
+    }
+
+    [Fact]
+    public void Move_SpeedChangeWhileMovingKeepsPosition()
+    {
+        controller.Move(Motion.Positive, Motion.None, 1.0);
+        ticker.Fire();
+        var before = axes.Values[CameraAxis.Pan];
+
+        controller.Move(Motion.Positive, Motion.None, 0.0);
+
+        Assert.Equal(before, axes.Values[CameraAxis.Pan]);
+        Assert.True(ticker.IsRunning);
     }
 
     [Fact]

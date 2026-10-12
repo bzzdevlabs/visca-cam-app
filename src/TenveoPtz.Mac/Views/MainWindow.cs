@@ -46,6 +46,8 @@ internal sealed partial class MainWindow : NSWindow, IMainView
 
     public event EventHandler<MotionEventArgs>? ZoomRequested;
 
+    public event EventHandler? SpeedChanged;
+
     public event EventHandler<MotionEventArgs>? FocusRequested;
 
     public event EventHandler<ToggleEventArgs>? AutoFocusRequested;
@@ -257,6 +259,7 @@ internal sealed partial class MainWindow : NSWindow, IMainView
 
         directionPad.PanTiltRequested += (_, e) => Safely(() => PanTiltRequested?.Invoke(this, e));
         directionPad.HomeRequested += (_, e) => Safely(() => HomeRequested?.Invoke(this, e));
+        speedSlider.Activated += (_, _) => Safely(() => SpeedChanged?.Invoke(this, EventArgs.Empty));
         zoomOut.Pressed += (_, _) => RaiseZoom(Core.Ptz.Motion.Negative);
         zoomIn.Pressed += (_, _) => RaiseZoom(Core.Ptz.Motion.Positive);
         zoomOut.Released += (_, _) => RaiseZoom(Core.Ptz.Motion.None);

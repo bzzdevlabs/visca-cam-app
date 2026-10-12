@@ -16,6 +16,16 @@ public static class SpeedScale
         return min + (int)Math.Round(clamped * (max - min));
     }
 
+    /// <summary>
+    /// Ease-in curve for continuous speeds: the lower half of the slider gives fine, slow control
+    /// and full speed is only reached at the top.
+    /// </summary>
+    public static double Ease(double fraction)
+    {
+        var clamped = Clamp(fraction);
+        return clamped * clamped;
+    }
+
     public static double Clamp(double fraction)
     {
         if (double.IsNaN(fraction))

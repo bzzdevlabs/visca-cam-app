@@ -39,6 +39,8 @@ internal sealed partial class MainForm : Form, IMainView
 
     public event EventHandler<MotionEventArgs>? ZoomRequested;
 
+    public event EventHandler? SpeedChanged;
+
     public event EventHandler<MotionEventArgs>? FocusRequested;
 
     public event EventHandler<ToggleEventArgs>? AutoFocusRequested;
@@ -164,6 +166,7 @@ internal sealed partial class MainForm : Form, IMainView
 
         movePanel.PanTiltRequested += (_, e) => PanTiltRequested?.Invoke(this, e);
         movePanel.HomeRequested += (_, e) => HomeRequested?.Invoke(this, e);
+        movePanel.SpeedChanged += (_, e) => SpeedChanged?.Invoke(this, e);
         lensPanel.ZoomRequested += (_, e) => ZoomRequested?.Invoke(this, e);
         lensPanel.FocusRequested += (_, e) => FocusRequested?.Invoke(this, e);
         lensPanel.AutoFocusRequested += (_, e) => AutoFocusRequested?.Invoke(this, e);

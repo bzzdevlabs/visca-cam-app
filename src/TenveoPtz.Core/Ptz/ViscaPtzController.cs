@@ -18,6 +18,13 @@ public sealed class ViscaPtzController : IPtzController, IRawCommandSender
     private const string ZoomKey = "zoom";
     private const string FocusKey = "focus";
 
+    // Fastest speeds the slider reaches. The protocol allows twice as fast (pan 0x18, tilt 0x14,
+    // zoom 7), which is far too quick to frame a shot by hand. The mapping stays linear so each
+    // slider step gives a distinct camera speed.
+    internal const int MaxDrivePanSpeed = 0x0C;
+    internal const int MaxDriveTiltSpeed = 0x0A;
+    internal const int MaxDriveZoomSpeed = 0x04;
+
     private readonly ViscaClient client;
     private readonly ICommandExecutor executor;
     private readonly Logger log;
@@ -42,13 +49,13 @@ public sealed class ViscaPtzController : IPtzController, IRawCommandSender
 
     public void Move(Motion pan, Motion tilt, double speed)
     {
-        var panSpeed = SpeedScale.ToRange(speed, ViscaCommands.MinPanSpeed, ViscaCommands.MaxPanSpeed);
-        var tiltSpeed = SpeedScale.ToRange(speed, ViscaCommands.MinTiltSpeed, ViscaCommands.MaxTiltSpeed);
+        var panSpeed = SpeedScale.ToRange(speed, ViscaCommands.MinPanSpeed, MaxDrivePanSpeed);
+        var tiltSpeed = SpeedScale.ToRange(speed, ViscaCommands.MinTiltSpeed, MaxDriveTiltSpeed);
         Send(ViscaCommands.PanTiltDrive(pan, tilt, panSpeed, tiltSpeed), PanTiltKey);
     }
 
     public void Zoom(Motion direction, double speed) =>
-        Send(ViscaCommands.Zoom(direction, SpeedScale.ToRange(speed, ViscaCommands.MinZoomSpeed, ViscaCommands.MaxZoomSpeed)), ZoomKey);
+        Send(ViscaCommands.Zoom(direction, SpeedScale.ToRange(speed, ViscaCommands.MinZoomSpeed, MaxDriveZoomSpeed)), ZoomKey);
 
     public void Focus(Motion direction) => Send(ViscaCommands.Focus(direction), FocusKey);
 

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using TenveoPtz.Core.Diagnostics;
 using TenveoPtz.Core.Presets;
+using TenveoPtz.Core.Ptz;
 using TenveoPtz.Core.Session;
 using TenveoPtz.Core.Settings;
 using TenveoPtz.Core.Storage;
@@ -169,6 +170,7 @@ public sealed partial class MainPresenter : IDisposable
         session.Ptz.Faulted -= OnPtzFaulted;
         session.Dispose();
         session = null;
+        heldPan = heldTilt = heldZoom = Motion.None;
     }
 
     private void OnPtzFaulted(object? sender, ErrorEventArgs e)

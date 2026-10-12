@@ -32,13 +32,29 @@ public sealed class ViscaPtzControllerTests
     }
 
     [Fact]
-    public void Move_AtFullSpeedUsesMaximumProtocolSpeeds()
+    public void Move_AtFullSpeedStaysWellBelowProtocolMaximum()
     {
         controller.Move(Motion.Positive, Motion.None, 1.0);
 
         var packet = Assert.Single(transport.Written);
-        Assert.Equal(ViscaCommands.MaxPanSpeed, packet[4]);
-        Assert.Equal(ViscaCommands.MaxTiltSpeed, packet[5]);
+        Assert.Equal(ViscaPtzController.MaxDrivePanSpeed, packet[4]);
+        Assert.Equal(ViscaPtzController.MaxDriveTiltSpeed, packet[5]);
+        Assert.True(packet[4] < ViscaCommands.MaxPanSpeed);
+        Assert.True(packet[5] < ViscaCommands.MaxTiltSpeed);
+    }
+
+    [Fact]
+    public void Move_EachSliderStepGivesADistinctPanSpeed()
+    {
+        var speeds = Enumerable.Range(0, 10).Select(step =>
+        {
+            transport.Written.Clear();
+            controller.Move(Motion.Positive, Motion.None, step / 9.0);
+            return transport.Written.Single()[4];
+        }).ToList();
+
+        Assert.Equal(ViscaCommands.MinPanSpeed, speeds[0]);
+        Assert.Equal(speeds.Count, speeds.Distinct().Count());
     }
 
     [Fact]
