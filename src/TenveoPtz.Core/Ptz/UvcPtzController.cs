@@ -7,8 +7,10 @@ using TenveoPtz.Core.Presets;
 namespace TenveoPtz.Core.Ptz;
 
 /// <summary>
-/// PTZ strategy using the UVC camera controls exposed by the USB video driver. UVC only offers
-/// absolute positioning, so continuous moves are emulated by stepping the axis on every tick.
+/// PTZ strategy using the UVC camera controls exposed by the USB video driver. Pan, tilt and zoom
+/// use the camera's own continuous (relative) motion when it offers it, which is smooth at any
+/// speed. Otherwise moves are emulated by stepping the absolute position on every tick, which
+/// can only move by whole units of the axis (often one degree).
 /// Must be used from the thread that owns the camera (the UI thread).
 /// </summary>
 public sealed class UvcPtzController : IPtzController
@@ -22,9 +24,14 @@ public sealed class UvcPtzController : IPtzController
     /// <summary>Fraction of full speed used at the slowest speed setting.</summary>
     internal const double MinimumSpeedFactor = 0.05;
 
+    /// <summary>Share of the camera's fastest continuous speed reached at the top of the slider.</summary>
+    internal const double ContinuousSpeedShare = 0.5;
+
     private readonly ICameraAxes axes;
     private readonly ITicker ticker;
     private readonly Dictionary<CameraAxis, AxisMotion> motions = new();
+    private readonly Dictionary<CameraAxis, AxisRange?> speedRanges = new();
+    private readonly HashSet<CameraAxis> continuous = new();
 
     /// <param name="ticker">Ticker driving continuous moves. Ownership is transferred to the controller.</param>
     public UvcPtzController(ICameraAxes axes, ITicker ticker)
@@ -110,6 +117,12 @@ public sealed class UvcPtzController : IPtzController
 
     private void SetMotion(CameraAxis axis, Motion direction, double speed)
     {
+        if (SpeedRangeOf(axis) is { } speedRange)
+        {
+            SetContinuous(axis, direction, speed, speedRange);
+            return;
+        }
+
         if (direction == Motion.None)
         {
             motions.Remove(axis);
@@ -130,6 +143,40 @@ public sealed class UvcPtzController : IPtzController
         UpdateTicker();
     }
 
+    private void SetContinuous(CameraAxis axis, Motion direction, double speed, AxisRange speedRange)
+    {
+        if (direction == Motion.None)
+        {
+            if (continuous.Remove(axis))
+            {
+                axes.SetSpeed(axis, 0);
+            }
+
+            return;
+        }
+
+        var fastest = Math.Max(speedRange.Min, (int)Math.Ceiling(speedRange.Max * ContinuousSpeedShare));
+        axes.SetSpeed(axis, (int)direction * SpeedScale.ToRange(speed, speedRange.Min, fastest));
+        continuous.Add(axis);
+    }
+
+    /// <summary>Continuous speed range of pan, tilt and zoom, read once; <c>null</c> when only absolute moves work.</summary>
+    private AxisRange? SpeedRangeOf(CameraAxis axis)
+    {
+        if (axis == CameraAxis.Focus)
+        {
+            return null;
+        }
+
+        if (!speedRanges.TryGetValue(axis, out var range))
+        {
+            range = axes.GetSpeedRange(axis);
+            speedRanges[axis] = range;
+        }
+
+        return range;
+    }
+
     private void MoveTo(CameraAxis axis, int? value)
     {
         var range = axes.GetRange(axis);
@@ -143,6 +190,11 @@ public sealed class UvcPtzController : IPtzController
     {
         motions.Clear();
         UpdateTicker();
+        foreach (var axis in new List<CameraAxis>(continuous))
+        {
+            continuous.Remove(axis);
+            axes.SetSpeed(axis, 0);
+        }
     }
 
     private void UpdateTicker()

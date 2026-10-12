@@ -29,6 +29,10 @@ internal sealed class FakeView : IMainView
 
     public event EventHandler? SpeedChanged;
 
+    public event EventHandler? PreciseModeChanged;
+
+    public event EventHandler? PreviewChanged;
+
     public event EventHandler<MotionEventArgs>? FocusRequested;
 
     public event EventHandler<ToggleEventArgs>? AutoFocusRequested;
@@ -54,6 +58,8 @@ internal sealed class FakeView : IMainView
     public ConnectionOptions ConnectionOptions { get; set; } = new();
 
     public double Speed { get; set; }
+
+    public bool PreciseMode { get; private set; }
 
     public bool AlwaysOnTop { get; set; }
 
@@ -130,6 +136,18 @@ internal sealed class FakeView : IMainView
     {
         Speed = speed;
         SpeedChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void SetPreciseMode(bool precise)
+    {
+        PreciseMode = precise;
+        PreciseModeChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void TogglePreview(bool show)
+    {
+        ConnectionOptions.ShowPreview = show;
+        PreviewChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void Focus(Motion direction) => FocusRequested?.Invoke(this, new MotionEventArgs(direction));

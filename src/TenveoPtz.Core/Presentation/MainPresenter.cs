@@ -65,6 +65,7 @@ public sealed partial class MainPresenter : IDisposable
         view.RefreshDevicesRequested += (_, _) => RefreshDevices();
         view.ConnectRequested += (_, _) => Connect();
         view.DisconnectRequested += (_, _) => Disconnect();
+        view.PreviewChanged += (_, _) => ChangePreview();
         SubscribeCameraEvents();
         SubscribePresetEvents();
     }
@@ -123,6 +124,15 @@ public sealed partial class MainPresenter : IDisposable
         catch (Exception ex)
         {
             ShowStatus("Could not list devices: " + ex.Message, true, ex);
+        }
+    }
+
+    /// <summary>Toggling the preview while connected reopens the camera with the new setting.</summary>
+    private void ChangePreview()
+    {
+        if (IsConnected)
+        {
+            Connect();
         }
     }
 

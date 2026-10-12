@@ -101,6 +101,52 @@ public sealed class UvcPtzControllerTests
     }
 
     [Fact]
+    public void Move_UsesContinuousMotionWhenTheCameraOffersIt()
+    {
+        axes.SpeedRanges[CameraAxis.Pan] = new AxisRange(1, 24, 1, 1);
+
+        controller.Move(Motion.Negative, Motion.None, 1.0);
+
+        Assert.Equal(new[] { "Pan -12" }, axes.Speeds);
+        Assert.False(axes.Values.ContainsKey(CameraAxis.Pan));
+        Assert.False(ticker.IsRunning);
+    }
+
+    [Fact]
+    public void Move_ContinuousSlowestSpeedIsTheCameraMinimum()
+    {
+        axes.SpeedRanges[CameraAxis.Pan] = new AxisRange(1, 24, 1, 1);
+
+        controller.Move(Motion.Positive, Motion.None, 0.0);
+
+        Assert.Equal(new[] { "Pan 1" }, axes.Speeds);
+    }
+
+    [Fact]
+    public void Move_ContinuousStopSendsZeroOnce()
+    {
+        axes.SpeedRanges[CameraAxis.Tilt] = new AxisRange(1, 20, 1, 1);
+        controller.Move(Motion.None, Motion.Positive, 0.5);
+
+        controller.Move(Motion.None, Motion.None, 0.5);
+        controller.Move(Motion.None, Motion.None, 0.5);
+
+        Assert.Equal("Tilt 0", axes.Speeds[axes.Speeds.Count - 1]);
+        Assert.Equal(2, axes.Speeds.Count);
+    }
+
+    [Fact]
+    public void Home_StopsContinuousMotion()
+    {
+        axes.SpeedRanges[CameraAxis.Pan] = new AxisRange(1, 24, 1, 1);
+        controller.Move(Motion.Positive, Motion.None, 0.5);
+
+        controller.Home();
+
+        Assert.Equal("Pan 0", axes.Speeds[axes.Speeds.Count - 1]);
+    }
+
+    [Fact]
     public void Zoom_ThrowsWhenAxisUnsupported()
     {
         axes.Ranges.Remove(CameraAxis.Zoom);

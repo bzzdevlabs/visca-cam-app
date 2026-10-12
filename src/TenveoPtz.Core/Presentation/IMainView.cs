@@ -36,6 +36,12 @@ public interface IMainView
     /// <summary>The speed slider moved; <see cref="Speed"/> holds the new value.</summary>
     event EventHandler? SpeedChanged;
 
+    /// <summary><see cref="PreciseMode"/> changed (switch toggled or Shift pressed or released).</summary>
+    event EventHandler? PreciseModeChanged;
+
+    /// <summary>The Preview switch was toggled; <see cref="ConnectionOptions"/> holds the new value.</summary>
+    event EventHandler? PreviewChanged;
+
     event EventHandler<MotionEventArgs>? FocusRequested;
 
     event EventHandler<ToggleEventArgs>? AutoFocusRequested;
@@ -63,6 +69,9 @@ public interface IMainView
 
     /// <summary>Relative movement speed, 0..1.</summary>
     double Speed { get; set; }
+
+    /// <summary>Fine framing: moves run at a fraction of the <see cref="Speed"/> setting.</summary>
+    bool PreciseMode { get; }
 
     bool AlwaysOnTop { get; set; }
 

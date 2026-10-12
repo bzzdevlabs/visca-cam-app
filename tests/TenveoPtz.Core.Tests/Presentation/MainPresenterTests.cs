@@ -174,6 +174,44 @@ public sealed class MainPresenterTests : IDisposable
     }
 
     [Fact]
+    public void PreciseMode_SlowsMovesAndAppliesWhileMoving()
+    {
+        view.Load();
+        view.Connect();
+        view.ChangeSpeed(0.8);
+        view.PanTilt(Motion.Positive, Motion.None);
+
+        view.SetPreciseMode(true);
+
+        Assert.Equal(2, Ptz.Calls.Count);
+        Assert.Equal(0.8 * MainPresenter.PreciseSpeedFactor, Ptz.LastSpeed, 6);
+    }
+
+    [Fact]
+    public void PreviewToggle_WhileConnectedReopensTheCamera()
+    {
+        view.Load();
+        view.Connect();
+        var opened = sessions.OpenCount;
+
+        view.TogglePreview(false);
+
+        Assert.True(view.Connected);
+        Assert.Equal(opened + 1, sessions.OpenCount);
+        Assert.False(sessions.LastOptions?.ShowPreview);
+    }
+
+    [Fact]
+    public void PreviewToggle_WhileDisconnectedDoesNotConnect()
+    {
+        view.Load();
+
+        view.TogglePreview(false);
+
+        Assert.False(view.Connected);
+    }
+
+    [Fact]
     public void SpeedChange_WhenStoppedSendsNothing()
     {
         view.Load();

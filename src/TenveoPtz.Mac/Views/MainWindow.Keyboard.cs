@@ -10,6 +10,7 @@ namespace TenveoPtz.Mac.Views;
 /// Keyboard shortcuts: arrows pan/tilt (hold, combinable for diagonals), +/- or Page Up/Down zoom,
 /// Home recentres, 1..9 recall presets. The window only receives keys that the focused control
 /// does not use itself, so text fields, the preset list and the slider keep their own keys.
+/// Holding Shift switches to precise (slow) moves.
 /// </summary>
 internal sealed partial class MainWindow
 {
@@ -23,6 +24,7 @@ internal sealed partial class MainWindow
 
     private readonly HashSet<ushort> heldArrows = new();
     private Motion heldZoom = Motion.None;
+    private bool shiftHeld;
 
     public override void KeyDown(NSEvent theEvent)
     {
@@ -49,10 +51,17 @@ internal sealed partial class MainWindow
         }
     }
 
+    public override void FlagsChanged(NSEvent theEvent)
+    {
+        base.FlagsChanged(theEvent);
+        SetShiftHeld((theEvent.ModifierFlags & NSEventModifierMask.ShiftKeyMask) != 0);
+    }
+
     /// <summary>Stops keyboard-driven motion when the window loses focus, so a key release is never missed.</summary>
     public override void ResignKeyWindow()
     {
         base.ResignKeyWindow();
+        SetShiftHeld(false);
         if (heldArrows.Count > 0)
         {
             heldArrows.Clear();
@@ -149,6 +158,15 @@ internal sealed partial class MainWindow
         var pan = Axis(heldArrows.Contains(LeftArrow), heldArrows.Contains(RightArrow));
         var tilt = Axis(heldArrows.Contains(DownArrow), heldArrows.Contains(UpArrow));
         Safely(() => PanTiltRequested?.Invoke(this, new PanTiltEventArgs(pan, tilt)));
+    }
+
+    private void SetShiftHeld(bool held)
+    {
+        if (shiftHeld != held)
+        {
+            shiftHeld = held;
+            Safely(() => PreciseModeChanged?.Invoke(this, EventArgs.Empty));
+        }
     }
 
     private void StopKeyboardZoom()

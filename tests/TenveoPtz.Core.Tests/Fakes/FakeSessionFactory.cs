@@ -12,9 +12,12 @@ internal sealed class FakeSessionFactory : ICameraSessionFactory
 
     public ConnectionOptions? LastOptions { get; private set; }
 
+    public int OpenCount { get; private set; }
+
     public CameraSession Open(ConnectionOptions options)
     {
         LastOptions = options;
+        OpenCount++;
         if (FailWith is not null)
         {
             throw FailWith;

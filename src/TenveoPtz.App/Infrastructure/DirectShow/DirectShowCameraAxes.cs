@@ -4,14 +4,19 @@ using TenveoPtz.Core.Ptz;
 
 namespace TenveoPtz.App.Infrastructure.DirectShow;
 
-/// <summary>Adapts DirectShow's <see cref="IAMCameraControl"/> to <see cref="ICameraAxes"/>.</summary>
+/// <summary>
+/// Adapts DirectShow's <see cref="IAMCameraControl"/> (absolute positions) and the filter's
+/// <see cref="IKsControl"/> (continuous moves, when available) to <see cref="ICameraAxes"/>.
+/// </summary>
 internal sealed class DirectShowCameraAxes : ICameraAxes
 {
     private readonly IAMCameraControl control;
+    private readonly RelativeCameraControl? relative;
 
     public DirectShowCameraAxes(IAMCameraControl control)
     {
         this.control = control ?? throw new ArgumentNullException(nameof(control));
+        relative = control is IKsControl ks ? new RelativeCameraControl(ks) : null;
     }
 
     public AxisRange? GetRange(CameraAxis axis)
@@ -32,6 +37,18 @@ internal sealed class DirectShowCameraAxes : ICameraAxes
         var current = GetValue(axis) ?? 0;
         var flags = enabled ? CameraControlFlags.Auto : CameraControlFlags.Manual;
         ComHelper.ThrowOnFailure(control.Set(property, current, flags), $"set automatic {axis}");
+    }
+
+    public AxisRange? GetSpeedRange(CameraAxis axis) => relative?.GetSpeedRange(axis);
+
+    public void SetSpeed(CameraAxis axis, int speed)
+    {
+        if (relative is null)
+        {
+            throw new NotSupportedException("This camera has no continuous motion control.");
+        }
+
+        relative.SetSpeed(axis, speed);
     }
 
     private static CameraControlProperty ToProperty(CameraAxis axis) => axis switch

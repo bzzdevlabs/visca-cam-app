@@ -102,9 +102,11 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
         foreach (CameraAxis axis in Enum.GetValues(typeof(CameraAxis)))
         {
             var range = axes.GetRange(axis);
+            var speeds = axis == CameraAxis.Focus ? null : axes.GetSpeedRange(axis);
             log.Info(range is null
                 ? $"UVC {axis}: not supported."
-                : $"UVC {axis}: {range.Min}..{range.Max}, step {range.Step}, default {range.Default}, current {axes.GetValue(axis)?.ToString() ?? "unknown"}.");
+                : $"UVC {axis}: {range.Min}..{range.Max}, step {range.Step}, default {range.Default}, current {axes.GetValue(axis)?.ToString() ?? "unknown"}, "
+                    + (speeds is null ? "absolute moves only." : $"continuous speeds {speeds.Min}..{speeds.Max}."));
         }
 
         return new UvcPtzController(axes, tickers.Create(UvcTickInterval));
