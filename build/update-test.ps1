@@ -64,7 +64,10 @@ function Find-Named($Root, [string] $Name, [int] $ProcessId) {
 
 # The update installs the release's .exe: releases published before the app came as a single
 # .exe (they held a .zip) cannot be updated to, so there is nothing to test until one exists.
-$latest = Invoke-RestMethod "https://api.github.com/repos/bzzdevlabs/visca-cam-app/releases/latest" -Headers @{ "User-Agent" = "TenveoPTZ-update-test" }
+# Authenticated when CI provides a token: anonymous calls share the runner IP's small rate limit.
+$headers = @{ "User-Agent" = "TenveoPTZ-update-test" }
+if ($env:GITHUB_TOKEN) { $headers["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
+$latest = Invoke-RestMethod "https://api.github.com/repos/bzzdevlabs/visca-cam-app/releases/latest" -Headers $headers
 if (-not ($latest.assets | Where-Object { $_.name -like "*.exe" })) {
     Write-Host "::notice title=Update test skipped::The latest release ($($latest.tag_name)) has no .exe to update to."
     return
