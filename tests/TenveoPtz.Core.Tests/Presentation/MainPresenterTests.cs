@@ -136,6 +136,17 @@ public sealed class MainPresenterTests : IDisposable
     }
 
     [Fact]
+    public void PanTilt_ReversesCameraDirectionsByDefault()
+    {
+        view.Load();
+        view.Connect();
+
+        view.PanTilt(Motion.Positive, Motion.Negative);
+
+        Assert.Equal("Move Negative Positive", Assert.Single(Ptz.Calls));
+    }
+
+    [Fact]
     public void PanTilt_HonoursInvertSettings()
     {
         settingsStore.Save(new AppSettings { InvertPan = true });
@@ -144,7 +155,36 @@ public sealed class MainPresenterTests : IDisposable
 
         view.PanTilt(Motion.Positive, Motion.Positive);
 
-        Assert.Equal("Move Negative Positive", Assert.Single(Ptz.Calls));
+        Assert.Equal("Move Positive Negative", Assert.Single(Ptz.Calls));
+    }
+
+    [Fact]
+    public void SpeedChange_WhileMovingIsAppliedImmediately()
+    {
+        view.Load();
+        view.Connect();
+        view.ChangeSpeed(0.2);
+        view.PanTilt(Motion.Positive, Motion.None);
+        view.Zoom(Motion.Positive);
+
+        view.ChangeSpeed(0.7);
+
+        Assert.Equal(new[] { "Move Negative None", "Zoom Positive", "Move Negative None", "Zoom Positive" }, Ptz.Calls);
+        Assert.Equal(0.7, Ptz.LastSpeed);
+    }
+
+    [Fact]
+    public void SpeedChange_WhenStoppedSendsNothing()
+    {
+        view.Load();
+        view.Connect();
+        view.PanTilt(Motion.Positive, Motion.None);
+        view.PanTilt(Motion.None, Motion.None);
+        Ptz.Calls.Clear();
+
+        view.ChangeSpeed(0.7);
+
+        Assert.Empty(Ptz.Calls);
     }
 
     [Fact]

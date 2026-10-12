@@ -6,17 +6,21 @@ title: Move the camera
 # Move the camera
 
 Move the camera with the pad (hold a button), or with the keyboard. The **Speed** slider sets
-how fast pan and tilt move. **Autofocus** can be turned off to focus by hand with **Near** and
-**Far**.
+how fast pan, tilt and zoom move, from very slow on the left for fine framing; moving it while
+the camera is moving changes the speed straight away. **Autofocus** can be turned off to focus
+by hand with **Near** and **Far**.
 
 ## Keyboard shortcuts
 
 | Keys | Action |
 | --- | --- |
 | Arrow keys (hold, combine for diagonals) | Pan / tilt |
-| `+` / `-` or Page Up / Page Down (hold; Fn + ↑ / ↓ on a Mac laptop) | Zoom in / out |
+| `+` / `-` (main keyboard or numeric keypad) or Page Up / Page Down (hold; Fn + ↑ / ↓ on a Mac laptop) | Zoom in / out |
 | Home (Fn + ← on a Mac laptop) | Home position |
 | `1` … `9` | Go to preset 1 … 9 |
+
+Holding a key moves the camera continuously until you release it. The keys keep driving the
+camera after you click the speed slider or the preset list; only text fields take them.
 
 ## Ceiling-mounted cameras
 

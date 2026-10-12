@@ -22,6 +22,7 @@ internal sealed class MovePanel : UserControl
         pad.HomeRequested += (_, e) => HomeRequested?.Invoke(this, e);
         toolTips.SetToolTip(pad, "Hold a direction to move (or use the arrow keys). Centre: home position.");
         toolTips.SetToolTip(speed, "Pan, tilt and zoom speed");
+        speed.ValueChanged += (_, e) => SpeedChanged?.Invoke(this, e);
 
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 2 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -40,6 +41,8 @@ internal sealed class MovePanel : UserControl
     public event EventHandler<PanTiltEventArgs>? PanTiltRequested;
 
     public event EventHandler? HomeRequested;
+
+    public event EventHandler? SpeedChanged;
 
     /// <summary>Relative speed, 0..1.</summary>
     public double Speed

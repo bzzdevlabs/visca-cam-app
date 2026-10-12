@@ -27,6 +27,8 @@ internal sealed class FakeView : IMainView
 
     public event EventHandler<MotionEventArgs>? ZoomRequested;
 
+    public event EventHandler? SpeedChanged;
+
     public event EventHandler<MotionEventArgs>? FocusRequested;
 
     public event EventHandler<ToggleEventArgs>? AutoFocusRequested;
@@ -123,6 +125,12 @@ internal sealed class FakeView : IMainView
     public void PanTilt(Motion pan, Motion tilt) => PanTiltRequested?.Invoke(this, new PanTiltEventArgs(pan, tilt));
 
     public void Zoom(Motion direction) => ZoomRequested?.Invoke(this, new MotionEventArgs(direction));
+
+    public void ChangeSpeed(double speed)
+    {
+        Speed = speed;
+        SpeedChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     public void Focus(Motion direction) => FocusRequested?.Invoke(this, new MotionEventArgs(direction));
 

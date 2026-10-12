@@ -19,5 +19,5 @@ internal sealed class DirectShowVideoService : IVideoService
     public IReadOnlyList<VideoDevice> GetDevices() =>
         DeviceEnumerator.GetDeviceNames().Select((name, index) => new VideoDevice(index, name)).ToList();
 
-    public IVideoSession Start(VideoDevice device) => new DirectShowVideoSession(device, host);
+    public IVideoSession Start(VideoDevice device, bool preview) => new DirectShowVideoSession(device, host, preview);
 }

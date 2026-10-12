@@ -13,8 +13,11 @@ namespace TenveoPtz.Core.Session;
 /// <summary>Builds a <see cref="CameraSession"/>, choosing the PTZ strategy from the connection mode.</summary>
 public sealed class CameraSessionFactory : ICameraSessionFactory
 {
-    /// <summary>Interval between position steps when emulating continuous UVC moves.</summary>
-    public static readonly TimeSpan UvcTickInterval = TimeSpan.FromMilliseconds(80);
+    /// <summary>
+    /// Interval between position steps when emulating continuous UVC moves: short, so the camera
+    /// gets many small steps and the motion looks continuous rather than jerky.
+    /// </summary>
+    public static readonly TimeSpan UvcTickInterval = TimeSpan.FromMilliseconds(40);
 
     private readonly IVideoService videoService;
     private readonly ISerialPortProvider serialPorts;
@@ -39,7 +42,9 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
         IVideoSession? video = null;
         try
         {
-            video = StartVideo(options.VideoDeviceName);
+            // VISCA needs nothing from the video device, so without a preview it is left alone entirely.
+            var needsVideo = options.ShowPreview || options.Mode == ControlMode.Uvc;
+            video = needsVideo ? StartVideo(options.VideoDeviceName, options.ShowPreview) : null;
             var ptz = options.Mode == ControlMode.Visca ? CreateVisca(options) : CreateUvc(video);
             return new CameraSession(video, ptz);
         }
@@ -50,7 +55,7 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
         }
     }
 
-    private IVideoSession? StartVideo(string deviceName)
+    private IVideoSession? StartVideo(string deviceName, bool preview)
     {
         if (string.IsNullOrEmpty(deviceName))
         {
@@ -59,8 +64,8 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
 
         var device = videoService.GetDevices().FirstOrDefault(d => d.Name == deviceName)
             ?? throw new InvalidOperationException($"Video device \"{deviceName}\" is not connected.");
-        var video = videoService.Start(device);
-        log.Info($"Video preview started on \"{deviceName}\" ({(video.Axes is null ? "no" : "with")} UVC camera controls).");
+        var video = videoService.Start(device, preview);
+        log.Info($"{(preview ? "Video preview started on" : "Opened without preview")} \"{deviceName}\" ({(video.Axes is null ? "no" : "with")} UVC camera controls).");
         return video;
     }
 

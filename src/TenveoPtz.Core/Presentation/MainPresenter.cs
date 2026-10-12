@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using TenveoPtz.Core.Diagnostics;
 using TenveoPtz.Core.Presets;
+using TenveoPtz.Core.Ptz;
 using TenveoPtz.Core.Session;
 using TenveoPtz.Core.Settings;
 using TenveoPtz.Core.Storage;
@@ -129,7 +130,7 @@ public sealed partial class MainPresenter : IDisposable
     {
         CloseSession();
         var options = view.ConnectionOptions.Clone();
-        log.Info($"Connecting: mode {options.Mode}, video \"{options.VideoDeviceName}\", port {options.PortName}, {options.BaudRate} baud, address {options.Address}.");
+        log.Info($"Connecting: mode {options.Mode}, video \"{options.VideoDeviceName}\" (preview {(options.ShowPreview ? "on" : "off")}), port {options.PortName}, {options.BaudRate} baud, address {options.Address}.");
         try
         {
             session = sessionFactory.Open(options);
@@ -146,7 +147,7 @@ public sealed partial class MainPresenter : IDisposable
         settings.AutoConnect = true;
         TrySave(() => settingsStore.Save(settings));
         view.ShowConnected(true);
-        ShowStatus("Connected: " + session.Description, false);
+        ShowStatus("Connected: " + session.Description + (options.ShowPreview ? "." : ". Preview off: other apps such as Zoom can use the camera."), false);
     }
 
     private void Disconnect()
@@ -169,6 +170,7 @@ public sealed partial class MainPresenter : IDisposable
         session.Ptz.Faulted -= OnPtzFaulted;
         session.Dispose();
         session = null;
+        heldPan = heldTilt = heldZoom = Motion.None;
     }
 
     private void OnPtzFaulted(object? sender, ErrorEventArgs e)

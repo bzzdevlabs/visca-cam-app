@@ -10,6 +10,8 @@ namespace TenveoPtz.App.Infrastructure.DirectShow;
 /// Live preview built as a DirectShow graph (capture filter, then default video renderer) whose
 /// renderer window is parented into a WinForms control. Rendering is done by Windows itself,
 /// so the preview costs almost no CPU.
+/// Without a preview only the capture filter is created: its camera controls work, but no
+/// graph streams the video, so the camera stays free for other applications such as Zoom.
 /// </summary>
 internal sealed class DirectShowVideoSession : IVideoSession
 {
@@ -26,13 +28,17 @@ internal sealed class DirectShowVideoSession : IVideoSession
     private IMediaControl? mediaControl;
     private IVideoWindow? videoWindow;
 
-    public DirectShowVideoSession(VideoDevice device, Control host)
+    public DirectShowVideoSession(VideoDevice device, Control host, bool preview)
     {
         Device = device ?? throw new ArgumentNullException(nameof(device));
         this.host = host ?? throw new ArgumentNullException(nameof(host));
         try
         {
-            BuildGraph();
+            OpenSource();
+            if (preview)
+            {
+                BuildGraph();
+            }
         }
         catch
         {
@@ -69,18 +75,21 @@ internal sealed class DirectShowVideoSession : IVideoSession
         host.Invalidate();
     }
 
-    private void BuildGraph()
+    private void OpenSource()
     {
         source = DeviceEnumerator.CreateFilter(Device.Index);
         if (source is IAMCameraControl cameraControl)
         {
             Axes = new DirectShowCameraAxes(cameraControl);
         }
+    }
 
+    private void BuildGraph()
+    {
         graph = ComHelper.CreateInstance<IGraphBuilder>(DsGuids.FilterGraph);
         builder = ComHelper.CreateInstance<ICaptureGraphBuilder2>(DsGuids.CaptureGraphBuilder2);
         ComHelper.ThrowOnFailure(builder.SetFiltergraph(graph), "SetFiltergraph");
-        ComHelper.ThrowOnFailure(graph.AddFilter(source, "Camera"), "AddFilter");
+        ComHelper.ThrowOnFailure(graph.AddFilter(source!, "Camera"), "AddFilter");
         RenderPreview();
 
         videoWindow = (IVideoWindow)graph;

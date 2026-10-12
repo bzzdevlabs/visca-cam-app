@@ -13,11 +13,14 @@ namespace TenveoPtz.Core.Ptz;
 /// </summary>
 public sealed class UvcPtzController : IPtzController
 {
-    /// <summary>Fraction of an axis range travelled per tick at full speed.</summary>
-    internal const double FullSpeedStepFraction = 0.02;
+    /// <summary>
+    /// Fraction of an axis range travelled per tick at full speed: about 6 % of the range per
+    /// second with the 40 ms ticks of <see cref="Session.CameraSessionFactory.UvcTickInterval"/>.
+    /// </summary>
+    internal const double FullSpeedStepFraction = 0.0025;
 
     /// <summary>Fraction of full speed used at the slowest speed setting.</summary>
-    internal const double MinimumSpeedFactor = 0.1;
+    internal const double MinimumSpeedFactor = 0.05;
 
     private readonly ICameraAxes axes;
     private readonly ITicker ticker;
@@ -92,11 +95,14 @@ public sealed class UvcPtzController : IPtzController
 
     private static Preset RequirePreset(Preset preset) => preset ?? throw new ArgumentNullException(nameof(preset));
 
-    private static int StepFor(AxisRange range, double speed)
+    /// <summary>
+    /// Distance travelled per tick. It may be a fraction of the axis resolution: the position is
+    /// accumulated between ticks, so slow speeds move one unit every few ticks instead of rounding up.
+    /// </summary>
+    private static double StepFor(AxisRange range, double speed)
     {
-        var factor = MinimumSpeedFactor + ((1 - MinimumSpeedFactor) * SpeedScale.Clamp(speed));
-        var step = (int)Math.Round(range.Span * FullSpeedStepFraction * factor);
-        return Math.Max(range.Step, step);
+        var factor = MinimumSpeedFactor + ((1 - MinimumSpeedFactor) * SpeedScale.Ease(speed));
+        return range.Span * FullSpeedStepFraction * factor;
     }
 
     private AxisRange RequireRange(CameraAxis axis) =>
@@ -107,6 +113,11 @@ public sealed class UvcPtzController : IPtzController
         if (direction == Motion.None)
         {
             motions.Remove(axis);
+        }
+        else if (motions.TryGetValue(axis, out var motion) && motion.Direction == direction)
+        {
+            // Speed change while moving: keep going from where we are, just at the new pace.
+            motion.Step = StepFor(motion.Range, speed);
         }
         else
         {
@@ -164,30 +175,40 @@ public sealed class UvcPtzController : IPtzController
 
     private void Advance(CameraAxis axis, AxisMotion motion)
     {
-        var next = motion.Range.Clamp(motion.Position + ((int)motion.Direction * motion.Step));
-        if (next != motion.Position)
+        var range = motion.Range;
+        motion.Position = Math.Max(range.Min, Math.Min(range.Max, motion.Position + ((int)motion.Direction * motion.Step)));
+
+        // Only whole multiples of the axis resolution reach the camera.
+        var value = range.Clamp(range.Min + ((int)Math.Round((motion.Position - range.Min) / range.Step) * range.Step));
+        if (value != motion.Written)
         {
-            axes.SetValue(axis, next);
-            motion.Position = next;
+            axes.SetValue(axis, value);
+            motion.Written = value;
         }
     }
 
     private sealed class AxisMotion
     {
-        public AxisMotion(AxisRange range, Motion direction, int step, int position)
+        public AxisMotion(AxisRange range, Motion direction, double step, int position)
         {
             Range = range;
             Direction = direction;
             Step = step;
             Position = position;
+            Written = position;
         }
 
         public AxisRange Range { get; }
 
         public Motion Direction { get; }
 
-        public int Step { get; }
+        /// <summary>Distance per tick, in axis units (may be below one).</summary>
+        public double Step { get; set; }
 
-        public int Position { get; set; }
+        /// <summary>Exact position, including the fraction not yet sent to the camera.</summary>
+        public double Position { get; set; }
+
+        /// <summary>Last value sent to the camera.</summary>
+        public int Written { get; set; }
     }
 }

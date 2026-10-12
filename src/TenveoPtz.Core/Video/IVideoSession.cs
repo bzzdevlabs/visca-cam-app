@@ -3,7 +3,7 @@ using TenveoPtz.Core.Ptz;
 
 namespace TenveoPtz.Core.Video;
 
-/// <summary>A running live preview. Disposing it stops the preview and releases the camera.</summary>
+/// <summary>An open video device, previewing or not. Disposing it stops the preview and releases the camera.</summary>
 public interface IVideoSession : IDisposable
 {
     VideoDevice Device { get; }

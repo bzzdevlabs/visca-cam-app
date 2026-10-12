@@ -17,9 +17,20 @@ internal sealed class RecordingPtzController : IPtzController
 
     public Exception? FailWith { get; set; }
 
-    public void Move(Motion pan, Motion tilt, double speed) => Record($"Move {pan} {tilt}");
+    /// <summary>Speed passed to the latest move or zoom.</summary>
+    public double LastSpeed { get; private set; }
 
-    public void Zoom(Motion direction, double speed) => Record($"Zoom {direction}");
+    public void Move(Motion pan, Motion tilt, double speed)
+    {
+        Record($"Move {pan} {tilt}");
+        LastSpeed = speed;
+    }
+
+    public void Zoom(Motion direction, double speed)
+    {
+        Record($"Zoom {direction}");
+        LastSpeed = speed;
+    }
 
     public void Focus(Motion direction) => Record($"Focus {direction}");
 

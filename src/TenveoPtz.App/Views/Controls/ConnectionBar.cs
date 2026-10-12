@@ -21,6 +21,7 @@ internal sealed class ConnectionBar : UserControl
     private readonly FlowLayoutPanel serialSettings;
     private readonly FluentButton connect = new("Connect", Glyphs.Connect, ButtonAppearance.Accent);
     private readonly FluentButton pin = new(string.Empty, Glyphs.Pin, ButtonAppearance.Subtle);
+    private readonly ToggleSwitch preview = new("Preview") { Checked = true, Margin = new Padding(8, 6, 2, 6) };
     private bool connected;
 
     public ConnectionBar(ToolTip toolTips)
@@ -39,6 +40,7 @@ internal sealed class ConnectionBar : UserControl
         toolTips.SetToolTip(ports, "COM port of the VISCA serial cable or adapter");
         toolTips.SetToolTip(baudRates, "VISCA baud rate (must match the camera, usually 9600)");
         toolTips.SetToolTip(addresses, "VISCA camera address (usually 1)");
+        toolTips.SetToolTip(preview, "Show the camera's video here. Turn off to use the camera in another app (Zoom, Teams...) while controlling it from here.");
         toolTips.SetToolTip(pin, "Keep this window on top of other windows");
         toolTips.SetToolTip(connect, "Open the video and camera control");
 
@@ -53,7 +55,7 @@ internal sealed class ConnectionBar : UserControl
         connect.Click += (_, _) => (connected ? DisconnectRequested : ConnectRequested)?.Invoke(this, EventArgs.Empty);
 
         // Rows never wrap: a wrapping row inside an auto-sized table reserves extra height.
-        var selection = Row(devices, mode);
+        var selection = Row(devices, mode, preview);
         var actions = Row(refresh, pin, connect);
         actions.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         serialSettings = Row(ports, baudRates, addresses);
@@ -102,6 +104,7 @@ internal sealed class ConnectionBar : UserControl
             PortName = ports.SelectedItem as string ?? string.Empty,
             BaudRate = (baudRates.SelectedItem as Choice<int>)?.Value ?? ConnectionOptions.DefaultBaudRate,
             Address = (addresses.SelectedItem as Choice<int>)?.Value ?? 1,
+            ShowPreview = preview.Checked,
         };
         set
         {
@@ -111,6 +114,7 @@ internal sealed class ConnectionBar : UserControl
             ports.SelectedItem = ports.Items.Contains(value.PortName) ? value.PortName : ports.Items.FirstOrDefault();
             baudRates.SelectedItem = Choice<int>.Find(baudRates, value.BaudRate) ?? Choice<int>.Find(baudRates, ConnectionOptions.DefaultBaudRate);
             addresses.SelectedItem = Choice<int>.Find(addresses, value.Address) ?? addresses.Items[0];
+            preview.Checked = value.ShowPreview;
         }
     }
 
@@ -128,6 +132,8 @@ internal sealed class ConnectionBar : UserControl
         {
             selector.Enabled = !isConnected;
         }
+
+        preview.Enabled = !isConnected;
     }
 
     private static FlowLayoutPanel Row(params Control[] controls)

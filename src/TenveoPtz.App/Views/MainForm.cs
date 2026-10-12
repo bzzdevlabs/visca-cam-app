@@ -39,6 +39,8 @@ internal sealed partial class MainForm : Form, IMainView
 
     public event EventHandler<MotionEventArgs>? ZoomRequested;
 
+    public event EventHandler? SpeedChanged;
+
     public event EventHandler<MotionEventArgs>? FocusRequested;
 
     public event EventHandler<ToggleEventArgs>? AutoFocusRequested;
@@ -90,7 +92,12 @@ internal sealed partial class MainForm : Form, IMainView
     public void ShowConnected(bool connected)
     {
         connectionBar.ShowConnected(connected);
-        videoSurface.ShowPlaceholder = !connected;
+        var previewing = connected && connectionBar.Options.ShowPreview;
+        videoSurface.PlaceholderTitle = connected ? "Preview off" : "No video";
+        videoSurface.PlaceholderText = connected
+            ? "The camera is free for other apps such as Zoom. Disconnect to turn the preview back on."
+            : "Choose the camera above, then select Connect.";
+        videoSurface.ShowPlaceholder = !previewing;
     }
 
     public void ShowPresets(IReadOnlyList<Preset> presets, Preset? selected) => presetPanel.ShowPresets(presets, selected);
@@ -164,6 +171,7 @@ internal sealed partial class MainForm : Form, IMainView
 
         movePanel.PanTiltRequested += (_, e) => PanTiltRequested?.Invoke(this, e);
         movePanel.HomeRequested += (_, e) => HomeRequested?.Invoke(this, e);
+        movePanel.SpeedChanged += (_, e) => SpeedChanged?.Invoke(this, e);
         lensPanel.ZoomRequested += (_, e) => ZoomRequested?.Invoke(this, e);
         lensPanel.FocusRequested += (_, e) => FocusRequested?.Invoke(this, e);
         lensPanel.AutoFocusRequested += (_, e) => AutoFocusRequested?.Invoke(this, e);
