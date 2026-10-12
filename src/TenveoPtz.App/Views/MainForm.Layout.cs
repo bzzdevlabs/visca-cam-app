@@ -22,6 +22,9 @@ internal sealed partial class MainForm
     /// <summary>Height of the preset list when the controls are under the video.</summary>
     private const int CompactPresetsHeight = 200;
 
+    /// <summary>Smallest video height when the controls are under the video.</summary>
+    private const int CompactMinVideoHeight = 160;
+
     private readonly ToolTip toolTips = new();
     private ConnectionBar connectionBar = null!;
     private MovePanel movePanel = null!;
@@ -31,6 +34,9 @@ internal sealed partial class MainForm
     private StatusLine statusLine = null!;
     private TableLayoutPanel root = null!;
     private TableLayoutPanel side = null!;
+
+    /// <summary>Video and controls, stacked and scrollable, in a narrow window.</summary>
+    private TableLayoutPanel stack = null!;
     private bool? compactLayout;
 
     private void InitializeLayout()
@@ -68,6 +74,12 @@ internal sealed partial class MainForm
         side.Controls.Add(lensPanel, 0, 1);
         side.Controls.Add(presetPanel, 0, 2);
 
+        stack = new TableLayoutPanel { Dock = DockStyle.Fill, Margin = new Padding(0), AutoScroll = true, ColumnCount = 1, RowCount = 2 };
+        stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        stack.RowStyles.Add(new RowStyle(SizeType.Absolute, CompactMinVideoHeight));
+        stack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        stack.Resize += (_, _) => FitCompactVideo();
+
         root = new TableLayoutPanel { Dock = DockStyle.Fill, Margin = new Padding(0) };
         UpdateLayoutMode();
 
@@ -100,28 +112,32 @@ internal sealed partial class MainForm
         compactLayout = compact;
         root.SuspendLayout();
         side.SuspendLayout();
+        stack.SuspendLayout();
+        stack.Controls.Clear();
         root.Controls.Clear();
         root.ColumnStyles.Clear();
         root.RowStyles.Clear();
         connectionBar.Compact = compact;
         if (compact)
         {
-            // Bar, video, controls, status line: one column.
+            // Bar on top, then video over the controls (scrolling when the window is too short),
+            // status line at the bottom. The video keeps a 16:9 height for the window width.
             root.ColumnCount = 1;
-            root.RowCount = 4;
+            root.RowCount = 3;
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             videoSurface.Margin = new Padding(0, 0, 0, Gap);
             side.AutoSize = true;
             side.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             side.RowStyles[2] = new RowStyle(SizeType.Absolute, Scaled(CompactPresetsHeight));
+            stack.Controls.Add(videoSurface, 0, 0);
+            stack.Controls.Add(side, 0, 1);
             root.Controls.Add(connectionBar, 0, 0);
-            root.Controls.Add(videoSurface, 0, 1);
-            root.Controls.Add(side, 0, 2);
-            root.Controls.Add(statusLine, 0, 3);
+            root.Controls.Add(stack, 0, 1);
+            root.Controls.Add(statusLine, 0, 2);
+            FitCompactVideo();
         }
         else
         {
@@ -145,7 +161,23 @@ internal sealed partial class MainForm
         }
 
         side.ResumeLayout(performLayout: false);
+        stack.ResumeLayout(performLayout: false);
         root.ResumeLayout(performLayout: true);
+    }
+
+    /// <summary>Gives the stacked video a 16:9 height for the available width.</summary>
+    private void FitCompactVideo()
+    {
+        if (compactLayout != true)
+        {
+            return;
+        }
+
+        var height = Math.Max(Scaled(CompactMinVideoHeight), (stack.ClientSize.Width * 9 / 16) + videoSurface.Margin.Vertical);
+        if ((int)stack.RowStyles[0].Height != height)
+        {
+            stack.RowStyles[0].Height = height;
+        }
     }
 
     /// <summary>
