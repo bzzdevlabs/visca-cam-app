@@ -8,7 +8,10 @@ using TenveoPtz.Core.Video;
 
 namespace TenveoPtz.App.Views.Controls;
 
-/// <summary>Header bar: camera and control selection, serial settings (VISCA only), refresh, pin and connect.</summary>
+/// <summary>
+/// Header bar: camera and control selection, preview switch, serial settings (VISCA only), refresh,
+/// pin and connect. In a narrow window the selectors go on rows of their own.
+/// </summary>
 internal sealed class ConnectionBar : UserControl
 {
     private static readonly int[] BaudRates = { 2400, 4800, 9600, 19200, 38400, 57600, 115200 };
@@ -19,6 +22,12 @@ internal sealed class ConnectionBar : UserControl
     private readonly DropDownSelector baudRates = new(120, "Baud rate");
     private readonly DropDownSelector addresses = new(120, "Address");
     private readonly FlowLayoutPanel serialSettings;
+    private readonly FlowLayoutPanel selection;
+    private readonly FlowLayoutPanel modeRow;
+    private readonly FlowLayoutPanel actions;
+    private readonly TableLayoutPanel layout;
+    private bool compact;
+    private bool settingOptions;
     private readonly FluentButton connect = new("Connect", Glyphs.Connect, ButtonAppearance.Accent);
     private readonly FluentButton pin = new(string.Empty, Glyphs.Pin, ButtonAppearance.Subtle);
     private readonly ToggleSwitch preview = new("Preview") { Checked = true, Margin = new Padding(8, 6, 2, 6) };
@@ -41,6 +50,13 @@ internal sealed class ConnectionBar : UserControl
         toolTips.SetToolTip(baudRates, "VISCA baud rate (must match the camera, usually 9600)");
         toolTips.SetToolTip(addresses, "VISCA camera address (usually 1)");
         toolTips.SetToolTip(preview, "Show the camera's video here. Turn off to use the camera in another app (Zoom, Teams...) while controlling it from here.");
+        preview.CheckedChanged += (_, _) =>
+        {
+            if (!settingOptions)
+            {
+                PreviewChanged?.Invoke(this, EventArgs.Empty);
+            }
+        };
         toolTips.SetToolTip(pin, "Keep this window on top of other windows");
         toolTips.SetToolTip(connect, "Open the video and camera control");
 
@@ -55,21 +71,15 @@ internal sealed class ConnectionBar : UserControl
         connect.Click += (_, _) => (connected ? DisconnectRequested : ConnectRequested)?.Invoke(this, EventArgs.Empty);
 
         // Rows never wrap: a wrapping row inside an auto-sized table reserves extra height.
-        var selection = Row(devices, mode, preview);
-        var actions = Row(refresh, pin, connect);
-        actions.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        selection = Row(devices, mode, preview);
+        modeRow = Row();
+        modeRow.Margin = new Padding(0, 4, 0, 0);
+        actions = Row(refresh, pin, connect);
         serialSettings = Row(ports, baudRates, addresses);
         serialSettings.Margin = new Padding(0, 4, 0, 0);
 
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 2 };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        layout.Controls.Add(selection, 0, 0);
-        layout.Controls.Add(actions, 1, 0);
-        layout.Controls.Add(serialSettings, 0, 1);
-        layout.SetColumnSpan(serialSettings, 2);
+        layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
+        ArrangeWide();
 
         var card = new Card { Dock = DockStyle.Fill, AutoSize = true, Padding = new Padding(10) };
         card.Controls.Add(layout);
@@ -84,6 +94,35 @@ internal sealed class ConnectionBar : UserControl
     public event EventHandler? DisconnectRequested;
 
     public event EventHandler? AlwaysOnTopChanged;
+
+    /// <summary>The Preview switch was toggled by the user.</summary>
+    public event EventHandler? PreviewChanged;
+
+    /// <summary>Stacks the selectors on separate rows, for a narrow window.</summary>
+    public bool Compact
+    {
+        get => compact;
+        set
+        {
+            if (compact == value)
+            {
+                return;
+            }
+
+            compact = value;
+            layout.SuspendLayout();
+            if (value)
+            {
+                ArrangeCompact();
+            }
+            else
+            {
+                ArrangeWide();
+            }
+
+            layout.ResumeLayout(performLayout: true);
+        }
+    }
 
     public bool AlwaysOnTop
     {
@@ -108,6 +147,7 @@ internal sealed class ConnectionBar : UserControl
         };
         set
         {
+            settingOptions = true;
             devices.SelectedItem = devices.Items.OfType<VideoDevice>().FirstOrDefault(d => d.Name == value.VideoDeviceName)
                 ?? devices.Items.FirstOrDefault();
             mode.SelectedItem = Choice<ControlMode>.Find(mode, value.Mode) ?? mode.Items[0];
@@ -115,6 +155,7 @@ internal sealed class ConnectionBar : UserControl
             baudRates.SelectedItem = Choice<int>.Find(baudRates, value.BaudRate) ?? Choice<int>.Find(baudRates, ConnectionOptions.DefaultBaudRate);
             addresses.SelectedItem = Choice<int>.Find(addresses, value.Address) ?? addresses.Items[0];
             preview.Checked = value.ShowPreview;
+            settingOptions = false;
         }
     }
 
@@ -132,8 +173,6 @@ internal sealed class ConnectionBar : UserControl
         {
             selector.Enabled = !isConnected;
         }
-
-        preview.Enabled = !isConnected;
     }
 
     private static FlowLayoutPanel Row(params Control[] controls)
@@ -141,6 +180,46 @@ internal sealed class ConnectionBar : UserControl
         var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
         row.Controls.AddRange(controls);
         return row;
+    }
+
+    /// <summary>One row: camera, control and preview, then the buttons on the right; serial settings below.</summary>
+    private void ArrangeWide()
+    {
+        Reset(columns: 2, rows: 2);
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        selection.Controls.AddRange(new Control[] { mode, preview });
+        actions.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        layout.Controls.Add(selection, 0, 0);
+        layout.Controls.Add(actions, 1, 0);
+        layout.Controls.Add(serialSettings, 0, 1);
+        layout.SetColumnSpan(serialSettings, 2);
+    }
+
+    /// <summary>Camera; control and preview; serial settings; buttons, each on its own row.</summary>
+    private void ArrangeCompact()
+    {
+        Reset(columns: 1, rows: 4);
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        modeRow.Controls.AddRange(new Control[] { mode, preview });
+        actions.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+        layout.Controls.Add(selection, 0, 0);
+        layout.Controls.Add(modeRow, 0, 1);
+        layout.Controls.Add(serialSettings, 0, 2);
+        layout.Controls.Add(actions, 0, 3);
+    }
+
+    private void Reset(int columns, int rows)
+    {
+        layout.Controls.Clear();
+        layout.ColumnStyles.Clear();
+        layout.RowStyles.Clear();
+        layout.ColumnCount = columns;
+        layout.RowCount = rows;
+        for (var row = 0; row < rows; row++)
+        {
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        }
     }
 
     private void UpdateSerialSettings() =>

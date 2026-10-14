@@ -41,6 +41,10 @@ internal sealed partial class MainForm : Form, IMainView
 
     public event EventHandler? SpeedChanged;
 
+    public event EventHandler? PreciseModeChanged;
+
+    public event EventHandler? PreviewChanged;
+
     public event EventHandler<MotionEventArgs>? FocusRequested;
 
     public event EventHandler<ToggleEventArgs>? AutoFocusRequested;
@@ -79,6 +83,8 @@ internal sealed partial class MainForm : Form, IMainView
         set => movePanel.Speed = value;
     }
 
+    public bool PreciseMode => movePanel.Precise || shiftHeld;
+
     public bool AlwaysOnTop
     {
         get => connectionBar.AlwaysOnTop;
@@ -95,7 +101,7 @@ internal sealed partial class MainForm : Form, IMainView
         var previewing = connected && connectionBar.Options.ShowPreview;
         videoSurface.PlaceholderTitle = connected ? "Preview off" : "No video";
         videoSurface.PlaceholderText = connected
-            ? "The camera is free for other apps such as Zoom. Disconnect to turn the preview back on."
+            ? "The camera is free for other apps such as Zoom. Turn Preview on to see it here."
             : "Choose the camera above, then select Connect.";
         videoSurface.ShowPlaceholder = !previewing;
     }
@@ -172,6 +178,8 @@ internal sealed partial class MainForm : Form, IMainView
         movePanel.PanTiltRequested += (_, e) => PanTiltRequested?.Invoke(this, e);
         movePanel.HomeRequested += (_, e) => HomeRequested?.Invoke(this, e);
         movePanel.SpeedChanged += (_, e) => SpeedChanged?.Invoke(this, e);
+        movePanel.PreciseChanged += (_, e) => PreciseModeChanged?.Invoke(this, e);
+        connectionBar.PreviewChanged += (_, e) => PreviewChanged?.Invoke(this, e);
         lensPanel.ZoomRequested += (_, e) => ZoomRequested?.Invoke(this, e);
         lensPanel.FocusRequested += (_, e) => FocusRequested?.Invoke(this, e);
         lensPanel.AutoFocusRequested += (_, e) => AutoFocusRequested?.Invoke(this, e);

@@ -7,6 +7,9 @@ namespace TenveoPtz.Core.Presentation;
 /// <summary>Camera motion: pan/tilt, zoom, focus and home, plus raw protocol commands from the debug console.</summary>
 public sealed partial class MainPresenter
 {
+    /// <summary>Share of the slider speed used in precise mode.</summary>
+    internal const double PreciseSpeedFactor = 0.25;
+
     private Motion heldPan;
     private Motion heldTilt;
     private Motion heldZoom;
@@ -16,6 +19,7 @@ public sealed partial class MainPresenter
         view.PanTiltRequested += (_, e) => PanTilt(e.Pan, e.Tilt);
         view.ZoomRequested += (_, e) => Zoom(e.Direction);
         view.SpeedChanged += (_, _) => ApplySpeed();
+        view.PreciseModeChanged += (_, _) => ApplySpeed();
         view.FocusRequested += (_, e) => Drive($"Focus {e.Direction}", ptz => ptz.Focus(e.Direction));
         view.AutoFocusRequested += (_, e) => Drive($"Autofocus {(e.Enabled ? "on" : "off")}", ptz => ptz.SetAutoFocus(e.Enabled));
         view.HomeRequested += (_, _) => Drive("Home", ptz => ptz.Home());
@@ -47,16 +51,19 @@ public sealed partial class MainPresenter
     {
         heldPan = pan;
         heldTilt = tilt;
-        Drive($"Pan {pan}, tilt {tilt}", ptz => ptz.Move(Orient(pan, settings.InvertPan), Orient(tilt, settings.InvertTilt), view.Speed));
+        Drive($"Pan {pan}, tilt {tilt}", ptz => ptz.Move(Orient(pan, settings.InvertPan), Orient(tilt, settings.InvertTilt), MoveSpeed));
     }
 
     private void Zoom(Motion direction)
     {
         heldZoom = direction;
-        Drive($"Zoom {direction}", ptz => ptz.Zoom(direction, view.Speed));
+        Drive($"Zoom {direction}", ptz => ptz.Zoom(direction, MoveSpeed));
     }
 
-    /// <summary>Moving the speed slider while a move is held takes effect immediately.</summary>
+    /// <summary>Speed passed to the camera: the slider setting, reduced in precise mode.</summary>
+    private double MoveSpeed => view.PreciseMode ? view.Speed * PreciseSpeedFactor : view.Speed;
+
+    /// <summary>Changing the speed or the precise mode while a move is held takes effect immediately.</summary>
     private void ApplySpeed()
     {
         if (session is null)
@@ -77,7 +84,7 @@ public sealed partial class MainPresenter
 
     private void Drive(string intent, Action<IPtzController> action)
     {
-        log.Debug($"{intent} (speed {view.Speed:0.00})");
+        log.Debug($"{intent} (speed {MoveSpeed:0.00}{(view.PreciseMode ? ", precise" : string.Empty)})");
         WithCamera(action);
     }
 

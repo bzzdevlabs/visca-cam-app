@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
     Starts the application, checks that its main window and its debug console (opened by
-    --debug) appear without an error dialog, saves screenshots of both, closes the app and checks
+    --debug) appear without an error dialog, saves screenshots of both (the main window also
+    narrowed, for the stacked layout), closes the app and checks
     that it wrote its log file. Runs once per theme. Used by CI; also handy on a test PC.
 .PARAMETER SamplePresets
     Writes sample presets and settings to %APPDATA%\TenveoPTZ first so the screenshots show a
@@ -31,6 +32,7 @@ Add-Type -Namespace Win32 -Name Window -MemberDefinition @"
 
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window, out Rect rect);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr window, IntPtr dc, uint flags);
+    [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr window, int x, int y, int width, int height, bool repaint);
     [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindow(string className, string title);
 "@
@@ -102,6 +104,15 @@ foreach ($theme in $Themes) {
         if ($ScreenshotDir) {
             New-Item -ItemType Directory -Force $ScreenshotDir | Out-Null
             $path = Join-Path $ScreenshotDir "screenshot-$theme.png"
+            Save-WindowImage $process.MainWindowHandle $path
+            Write-Host "[$theme] Screenshot saved to $path"
+
+            # Narrow window: the controls move under the video.
+            $rect = New-Object Win32.Window+Rect
+            [void][Win32.Window]::GetWindowRect($process.MainWindowHandle, [ref] $rect)
+            [void][Win32.Window]::MoveWindow($process.MainWindowHandle, $rect.Left, $rect.Top, 520, 1000, $true)
+            Start-Sleep -Seconds 1
+            $path = Join-Path $ScreenshotDir "screenshot-$theme-narrow.png"
             Save-WindowImage $process.MainWindowHandle $path
             Write-Host "[$theme] Screenshot saved to $path"
         }

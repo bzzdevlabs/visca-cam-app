@@ -48,6 +48,15 @@ internal sealed partial class MainWindow : NSWindow, IMainView
 
     public event EventHandler? SpeedChanged;
 
+    public event EventHandler? PreciseModeChanged;
+
+    /// <summary>Never raised: macOS shares the camera with other apps, so there is no Preview switch.</summary>
+    public event EventHandler? PreviewChanged
+    {
+        add { }
+        remove { }
+    }
+
     public event EventHandler<MotionEventArgs>? FocusRequested;
 
     public event EventHandler<ToggleEventArgs>? AutoFocusRequested;
@@ -102,6 +111,9 @@ internal sealed partial class MainWindow : NSWindow, IMainView
             UpdateSerialSettings();
         }
     }
+
+    /// <summary>Precise (slow) moves while Shift is held.</summary>
+    public bool PreciseMode => shiftHeld;
 
     public double Speed
     {

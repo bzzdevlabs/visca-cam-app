@@ -1,6 +1,6 @@
 namespace TenveoPtz.Core.Ptz;
 
-/// <summary>Absolute access to the camera axes exposed by the video driver (UVC camera control).</summary>
+/// <summary>Access to the camera axes exposed by the video driver (UVC camera control).</summary>
 public interface ICameraAxes
 {
     /// <summary>Returns the axis range, or <c>null</c> when the camera does not support the axis.</summary>
@@ -12,4 +12,13 @@ public interface ICameraAxes
     void SetValue(CameraAxis axis, int value);
 
     void SetAutomatic(CameraAxis axis, bool enabled);
+
+    /// <summary>
+    /// Speed range of the axis's continuous (relative) motion, from the slowest to the fastest
+    /// speed, or <c>null</c> when the camera only supports absolute positioning on that axis.
+    /// </summary>
+    AxisRange? GetSpeedRange(CameraAxis axis);
+
+    /// <summary>Moves the axis continuously: the sign gives the direction, the magnitude the speed; 0 stops.</summary>
+    void SetSpeed(CameraAxis axis, int speed);
 }

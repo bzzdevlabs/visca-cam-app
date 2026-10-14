@@ -11,6 +11,7 @@ internal sealed class MovePanel : UserControl
     private const int SpeedSteps = 10;
 
     private readonly FluentSlider speed = new(1, SpeedSteps, SpeedSteps / 2) { Dock = DockStyle.Fill };
+    private readonly ToggleSwitch precise = new("Precise") { Anchor = AnchorStyles.Left };
 
     public MovePanel(ToolTip toolTips)
     {
@@ -23,14 +24,18 @@ internal sealed class MovePanel : UserControl
         toolTips.SetToolTip(pad, "Hold a direction to move (or use the arrow keys). Centre: home position.");
         toolTips.SetToolTip(speed, "Pan, tilt and zoom speed");
         speed.ValueChanged += (_, e) => SpeedChanged?.Invoke(this, e);
+        toolTips.SetToolTip(precise, "Much slower moves for fine framing (or hold Shift)");
+        precise.CheckedChanged += (_, e) => PreciseChanged?.Invoke(this, e);
 
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 2 };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 3 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.Controls.Add(pad, 0, 0);
         layout.SetColumnSpan(pad, 2);
         layout.Controls.Add(new Label { Text = "Speed", AutoSize = true, Anchor = AnchorStyles.Left, Font = FluentFonts.Body, ForeColor = Theme.Current.TextSecondary }, 0, 1);
         layout.Controls.Add(speed, 1, 1);
+        layout.Controls.Add(precise, 0, 2);
+        layout.SetColumnSpan(precise, 2);
 
         var card = new Card("Pan and tilt") { Dock = DockStyle.Fill, AutoSize = true };
         card.Controls.Add(layout);
@@ -43,6 +48,10 @@ internal sealed class MovePanel : UserControl
     public event EventHandler? HomeRequested;
 
     public event EventHandler? SpeedChanged;
+
+    public event EventHandler? PreciseChanged;
+
+    public bool Precise => precise.Checked;
 
     /// <summary>Relative speed, 0..1.</summary>
     public double Speed

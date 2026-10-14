@@ -29,6 +29,12 @@ internal sealed class UvcCameraAxes : ICameraAxes, IDisposable
         this.device = device ?? throw new ArgumentNullException(nameof(device));
     }
 
+    /// <summary>Continuous moves are not implemented on macOS yet: pan, tilt and zoom step absolute positions.</summary>
+    public AxisRange? GetSpeedRange(CameraAxis axis) => null;
+
+    public void SetSpeed(CameraAxis axis, int speed) =>
+        throw new NotSupportedException("Continuous moves are not available on macOS.");
+
     public AxisRange? GetRange(CameraAxis axis)
     {
         if (!ranges.TryGetValue(axis, out var range))

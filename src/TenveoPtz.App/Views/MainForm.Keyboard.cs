@@ -11,12 +11,13 @@ namespace TenveoPtz.App.Views;
 /// Home recentres, 1..9 recall presets (all ignored while a text field has focus, so the camera
 /// keys keep working after clicking the speed slider or the preset list). Key auto-repeat is ignored:
 /// holding a key sends one move on press and one stop on release, so the motion stays continuous.
-/// Ctrl+Shift+D toggles the hidden debug console.
+/// Holding Shift switches to precise (slow) moves. Ctrl+Shift+D toggles the hidden debug console.
 /// </summary>
 internal sealed partial class MainForm
 {
     private readonly HashSet<Keys> heldArrows = new();
     private Motion heldZoom = Motion.None;
+    private bool shiftHeld;
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
@@ -24,6 +25,12 @@ internal sealed partial class MainForm
         {
             ToggleDebugConsole();
             return true;
+        }
+
+        if ((keyData & Keys.KeyCode) == Keys.ShiftKey)
+        {
+            SetShiftHeld(true);
+            return base.ProcessCmdKey(ref msg, keyData);
         }
 
         if (IsKeyboardTarget(FocusedLeaf()) || (keyData & (Keys.Control | Keys.Alt)) != 0)
@@ -73,7 +80,11 @@ internal sealed partial class MainForm
     protected override void OnKeyUp(KeyEventArgs e)
     {
         base.OnKeyUp(e);
-        if (heldArrows.Remove(e.KeyCode))
+        if (e.KeyCode == Keys.ShiftKey)
+        {
+            SetShiftHeld(false);
+        }
+        else if (heldArrows.Remove(e.KeyCode))
         {
             RaisePanTiltFromArrows();
             e.Handled = true;
@@ -89,6 +100,7 @@ internal sealed partial class MainForm
     protected override void OnDeactivate(EventArgs e)
     {
         base.OnDeactivate(e);
+        SetShiftHeld(false);
         if (heldArrows.Count > 0)
         {
             heldArrows.Clear();
@@ -149,6 +161,15 @@ internal sealed partial class MainForm
         var pan = Axis(heldArrows.Contains(Keys.Left), heldArrows.Contains(Keys.Right));
         var tilt = Axis(heldArrows.Contains(Keys.Down), heldArrows.Contains(Keys.Up));
         PanTiltRequested?.Invoke(this, new PanTiltEventArgs(pan, tilt));
+    }
+
+    private void SetShiftHeld(bool held)
+    {
+        if (shiftHeld != held)
+        {
+            shiftHeld = held;
+            PreciseModeChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void StopKeyboardZoom()

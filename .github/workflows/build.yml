@@ -72,6 +72,8 @@ jobs:
 
       - name: Update test (install the latest release over this build)
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: ./build/update-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe -ScreenshotDir dist/screenshots
 
       - name: Build installer
