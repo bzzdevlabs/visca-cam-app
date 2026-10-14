@@ -75,6 +75,9 @@ public interface IMainView
 
     bool AlwaysOnTop { get; set; }
 
+    /// <summary>The numeric keypad controls the camera even while another application is in front.</summary>
+    bool BackgroundNumpad { get; set; }
+
     void ShowVideoDevices(IReadOnlyList<VideoDevice> devices);
 
     void ShowSerialPorts(IReadOnlyList<string> portNames);

@@ -63,6 +63,8 @@ internal sealed class FakeView : IMainView
 
     public bool AlwaysOnTop { get; set; }
 
+    public bool BackgroundNumpad { get; set; }
+
     public bool Connected { get; private set; }
 
     public IReadOnlyList<Preset> Presets { get; private set; } = Array.Empty<Preset>();

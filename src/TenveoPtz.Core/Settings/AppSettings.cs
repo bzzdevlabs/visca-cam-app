@@ -13,6 +13,9 @@ public sealed class AppSettings
 
     public bool AlwaysOnTop { get; set; }
 
+    /// <summary>The numeric keypad controls the camera even while another application is in front (Windows).</summary>
+    public bool BackgroundNumpad { get; set; }
+
     /// <summary>Reverses pan, e.g. for a ceiling-mounted camera.</summary>
     public bool InvertPan { get; set; }
 

@@ -30,6 +30,24 @@ On Windows, make the window narrower to put the controls under the video.
 Holding a key moves the camera continuously until you release it. The keys keep driving the
 camera after you click the speed slider or the preset list; only text fields take them.
 
+## Numeric keypad while another app is in front (Windows)
+
+Turn on **Numpad in background** (under the speed slider) to keep controlling the camera from the
+numeric keypad while Zoom, Teams or any other application is in front:
+
+| Keypad | Num Lock off | Num Lock on |
+| --- | --- | --- |
+| 8 / 2 / 4 / 6 (hold) | Tilt up / down, pan left / right | Presets 8, 2, 4, 6 |
+| 7 | Home position | Preset 7 |
+| 9 / 3 (hold) | Zoom in / out | Presets 9, 3 |
+| 1 | — | Preset 1 |
+| 5 | — | Preset 5 |
+| `+` / `-` (hold) | Zoom in / out | Zoom in / out |
+
+While the switch is on and the camera is connected, these keypad keys go to Tenveo PTZ only,
+not to the application in front; the arrow keys and the digit row above the letters are not
+affected. The setting is remembered.
+
 ## Ceiling-mounted cameras
 
 To reverse the controls of a camera mounted upside down, set `InvertPan` and/or `InvertTilt`

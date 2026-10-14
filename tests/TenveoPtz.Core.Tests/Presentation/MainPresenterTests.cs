@@ -342,6 +342,7 @@ public sealed class MainPresenterTests : IDisposable
         view.ConnectionOptions = new ConnectionOptions { Mode = ControlMode.Visca, PortName = "COM3" };
         view.Speed = 0.8;
         view.AlwaysOnTop = true;
+        view.BackgroundNumpad = true;
 
         view.Close();
 
@@ -349,6 +350,17 @@ public sealed class MainPresenterTests : IDisposable
         Assert.Equal("COM3", saved.Connection.PortName);
         Assert.Equal(0.8, saved.Speed);
         Assert.True(saved.AlwaysOnTop);
+        Assert.True(saved.BackgroundNumpad);
         Assert.False(saved.AutoConnect);
+    }
+
+    [Fact]
+    public void Load_RestoresBackgroundNumpad()
+    {
+        settingsStore.Save(new AppSettings { BackgroundNumpad = true });
+
+        view.Load();
+
+        Assert.True(view.BackgroundNumpad);
     }
 }

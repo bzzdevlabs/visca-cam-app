@@ -81,6 +81,7 @@ public sealed partial class MainPresenter : IDisposable
         log.Info($"Loaded settings ({settings.Connection.Mode} mode, auto-connect {(settings.AutoConnect ? "on" : "off")}) and {presets.Items.Count} preset(s).");
 
         view.AlwaysOnTop = settings.AlwaysOnTop;
+        view.BackgroundNumpad = settings.BackgroundNumpad;
         view.Speed = settings.Speed;
         RefreshDevices();
         view.ConnectionOptions = settings.Connection.Clone();
@@ -103,6 +104,7 @@ public sealed partial class MainPresenter : IDisposable
         settings.Connection = view.ConnectionOptions.Clone();
         settings.Speed = view.Speed;
         settings.AlwaysOnTop = view.AlwaysOnTop;
+        settings.BackgroundNumpad = view.BackgroundNumpad;
         settings.AutoConnect = IsConnected;
         TrySave(() => settingsStore.Save(settings));
         CloseSession();

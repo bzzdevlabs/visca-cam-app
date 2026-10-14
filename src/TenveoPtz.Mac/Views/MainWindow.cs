@@ -112,6 +112,9 @@ internal sealed partial class MainWindow : NSWindow, IMainView
         }
     }
 
+    /// <summary>Kept for the settings file only: background keypad control is not available on macOS.</summary>
+    public bool BackgroundNumpad { get; set; }
+
     /// <summary>Precise (slow) moves while Shift is held.</summary>
     public bool PreciseMode => shiftHeld;
 
