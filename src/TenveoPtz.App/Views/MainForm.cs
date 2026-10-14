@@ -85,6 +85,12 @@ internal sealed partial class MainForm : Form, IMainView
 
     public bool PreciseMode => movePanel.Precise || shiftHeld;
 
+    public bool BackgroundNumpad
+    {
+        get => movePanel.BackgroundNumpad;
+        set => movePanel.BackgroundNumpad = value;
+    }
+
     public bool AlwaysOnTop
     {
         get => connectionBar.AlwaysOnTop;
@@ -97,6 +103,8 @@ internal sealed partial class MainForm : Form, IMainView
 
     public void ShowConnected(bool connected)
     {
+        isConnected = connected;
+        heldInBackground.Clear();
         connectionBar.ShowConnected(connected);
         var previewing = connected && connectionBar.Options.ShowPreview;
         videoSurface.PlaceholderTitle = connected ? "Preview off" : "No video";
@@ -127,6 +135,7 @@ internal sealed partial class MainForm : Form, IMainView
         base.OnHandleCreated(e);
         WindowChrome.Apply(this, Theme.Current);
         Theme.StartWatching();
+        UpdateNumpadHook();
     }
 
     protected override void Dispose(bool disposing)
@@ -137,6 +146,7 @@ internal sealed partial class MainForm : Form, IMainView
             Theme.StopWatching();
             toolTips.Dispose();
             debugConsole?.Dispose();
+            numpadHook?.Dispose();
         }
 
         base.Dispose(disposing);
@@ -179,6 +189,7 @@ internal sealed partial class MainForm : Form, IMainView
         movePanel.HomeRequested += (_, e) => HomeRequested?.Invoke(this, e);
         movePanel.SpeedChanged += (_, e) => SpeedChanged?.Invoke(this, e);
         movePanel.PreciseChanged += (_, e) => PreciseModeChanged?.Invoke(this, e);
+        movePanel.BackgroundNumpadChanged += (_, _) => UpdateNumpadHook();
         connectionBar.PreviewChanged += (_, e) => PreviewChanged?.Invoke(this, e);
         lensPanel.ZoomRequested += (_, e) => ZoomRequested?.Invoke(this, e);
         lensPanel.FocusRequested += (_, e) => FocusRequested?.Invoke(this, e);

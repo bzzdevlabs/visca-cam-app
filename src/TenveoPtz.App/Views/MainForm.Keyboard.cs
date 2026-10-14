@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using TenveoPtz.App.Infrastructure.Input;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Ptz;
 
@@ -12,12 +13,19 @@ namespace TenveoPtz.App.Views;
 /// keys keep working after clicking the speed slider or the preset list). Key auto-repeat is ignored:
 /// holding a key sends one move on press and one stop on release, so the motion stays continuous.
 /// Holding Shift switches to precise (slow) moves. Ctrl+Shift+D toggles the hidden debug console.
+/// With "Numpad in background" on, the numeric keypad keys do the same while another application
+/// (Zoom, Teams...) is in front.
 /// </summary>
 internal sealed partial class MainForm
 {
     private readonly HashSet<Keys> heldArrows = new();
+
+    /// <summary>Keypad keys pressed while another application was in front, until released.</summary>
+    private readonly HashSet<Keys> heldInBackground = new();
     private Motion heldZoom = Motion.None;
     private bool shiftHeld;
+    private NumpadHook? numpadHook;
+    private bool isConnected;
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
@@ -38,7 +46,102 @@ internal sealed partial class MainForm
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        var key = keyData & Keys.KeyCode;
+        return HandleCameraKeyDown(keyData & Keys.KeyCode) || base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    protected override void OnKeyUp(KeyEventArgs e)
+    {
+        base.OnKeyUp(e);
+        if (e.KeyCode == Keys.ShiftKey)
+        {
+            SetShiftHeld(false);
+        }
+        else if (HandleCameraKeyUp(e.KeyCode))
+        {
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>Stops keyboard-driven motion when the window loses focus, so a key release is never missed.</summary>
+    protected override void OnDeactivate(EventArgs e)
+    {
+        base.OnDeactivate(e);
+        SetShiftHeld(false);
+        if (heldArrows.Count > 0)
+        {
+            heldArrows.Clear();
+            RaisePanTiltFromArrows();
+        }
+
+        if (heldZoom != Motion.None)
+        {
+            StopKeyboardZoom();
+        }
+    }
+
+    /// <summary>Starts or stops watching the numeric keypad while other applications are in front.</summary>
+    private void UpdateNumpadHook()
+    {
+        if (BackgroundNumpad && numpadHook is null && IsHandleCreated)
+        {
+            try
+            {
+                numpadHook = new NumpadHook(OnBackgroundKeyDown, OnBackgroundKeyUp);
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                statusLine.Show(ex.Message + ".", true);
+            }
+        }
+        else if (!BackgroundNumpad && numpadHook is not null)
+        {
+            numpadHook.Dispose();
+            numpadHook = null;
+            ReleaseBackgroundKeys();
+        }
+    }
+
+    /// <summary>Keypad key pressed in another application: drives the camera when connected. Returns whether to swallow it.</summary>
+    private bool OnBackgroundKeyDown(Keys key)
+    {
+        if (!isConnected)
+        {
+            return false;
+        }
+
+        // Auto-repeat sends the press again: act on the first one only, but keep swallowing.
+        if (heldInBackground.Add(key))
+        {
+            BeginInvoke(new Action(() => HandleCameraKeyDown(key)));
+        }
+
+        return true;
+    }
+
+    private bool OnBackgroundKeyUp(Keys key)
+    {
+        if (!heldInBackground.Remove(key))
+        {
+            return false;
+        }
+
+        BeginInvoke(new Action(() => HandleCameraKeyUp(key)));
+        return true;
+    }
+
+    private void ReleaseBackgroundKeys()
+    {
+        foreach (var key in new List<Keys>(heldInBackground))
+        {
+            HandleCameraKeyUp(key);
+        }
+
+        heldInBackground.Clear();
+    }
+
+    /// <summary>Camera action of a key press: pan/tilt, zoom, home or preset. Returns whether the key is a camera key.</summary>
+    private bool HandleCameraKeyDown(Keys key)
+    {
         if (IsArrow(key))
         {
             if (heldArrows.Add(key))
@@ -74,43 +177,25 @@ internal sealed partial class MainForm
             return true;
         }
 
-        return base.ProcessCmdKey(ref msg, keyData);
+        return false;
     }
 
-    protected override void OnKeyUp(KeyEventArgs e)
+    /// <summary>Stops the move or zoom a key release ends. Returns whether it ended one.</summary>
+    private bool HandleCameraKeyUp(Keys key)
     {
-        base.OnKeyUp(e);
-        if (e.KeyCode == Keys.ShiftKey)
-        {
-            SetShiftHeld(false);
-        }
-        else if (heldArrows.Remove(e.KeyCode))
+        if (heldArrows.Remove(key))
         {
             RaisePanTiltFromArrows();
-            e.Handled = true;
-        }
-        else if (heldZoom != Motion.None && ZoomFor(e.KeyCode) == heldZoom)
-        {
-            StopKeyboardZoom();
-            e.Handled = true;
-        }
-    }
-
-    /// <summary>Stops keyboard-driven motion when the window loses focus, so a key release is never missed.</summary>
-    protected override void OnDeactivate(EventArgs e)
-    {
-        base.OnDeactivate(e);
-        SetShiftHeld(false);
-        if (heldArrows.Count > 0)
-        {
-            heldArrows.Clear();
-            RaisePanTiltFromArrows();
+            return true;
         }
 
-        if (heldZoom != Motion.None)
+        if (heldZoom != Motion.None && ZoomFor(key) == heldZoom)
         {
             StopKeyboardZoom();
+            return true;
         }
+
+        return false;
     }
 
     /// <summary>Controls where the arrow, digit and +/- keys are typing, not camera control.</summary>
