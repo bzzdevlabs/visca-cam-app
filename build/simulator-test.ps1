@@ -201,10 +201,12 @@ try {
     [Win32.Input]::keybd_event(0x11, 0, 0, [UIntPtr]::Zero)               # Ctrl down.
     Press-Key 0xBC                                                       # Comma.
     [Win32.Input]::keybd_event(0x11, 0, $KEYEVENTF_KEYUP, [UIntPtr]::Zero) # Ctrl up.
-    $isPanel = New-Object System.Windows.Automation.AndCondition @(
-        (New-Object System.Windows.Automation.PropertyCondition $automation::NameProperty, "Settings"),
-        (New-Object System.Windows.Automation.PropertyCondition $automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window),
-        (New-Object System.Windows.Automation.PropertyCondition $automation::ProcessIdProperty, $process.Id))
+    # ::new rather than New-Object: New-Object wraps the ControlType in a PSObject, which
+    # PropertyCondition rejects.
+    $isPanel = [System.Windows.Automation.AndCondition]::new([System.Windows.Automation.Condition[]]@(
+        [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, "Settings"),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, [int]$process.Id)))
     $panel = Wait-For { $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $isPanel) } "the settings panel"
     Start-Sleep -Milliseconds 500
     Save-WindowImage ([IntPtr]$panel.Current.NativeWindowHandle) "screenshot-settings"
