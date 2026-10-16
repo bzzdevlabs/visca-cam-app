@@ -61,6 +61,7 @@ internal sealed class ConnectionBar : UserControl
         var settingsButton = new FluentButton(string.Empty, Glyphs.Settings, ButtonAppearance.Subtle);
         toolTips.SetToolTip(settingsButton, "Settings");
         settingsButton.AccessibleName = "Settings";
+        settingsButton.Name = "SettingsButton"; // UI Automation id, used by the CI test.
         settingsButton.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
         toolTips.SetToolTip(connect, "Open the video and camera control");
 

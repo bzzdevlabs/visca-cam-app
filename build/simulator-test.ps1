@@ -125,10 +125,12 @@ function Focus-App {
     Wait-For { [Win32.Input]::GetForegroundWindow() -eq $process.MainWindowHandle } "the application to come to the front" | Out-Null
 }
 
-function Click-Button([string] $Name) {
+# Finds the button by its name, or with -AutomationId by its control name (icon-only buttons).
+function Click-Button([string] $Name, [switch] $AutomationId) {
+    $property = if ($AutomationId) { $automation::AutomationIdProperty } else { $automation::NameProperty }
     # Not named $condition: Wait-For's $Condition parameter would shadow it inside the script block.
     $byName = New-Object System.Windows.Automation.AndCondition @(
-        (New-Object System.Windows.Automation.PropertyCondition $automation::NameProperty, $Name),
+        (New-Object System.Windows.Automation.PropertyCondition $property, $Name),
         (New-Object System.Windows.Automation.PropertyCondition $automation::ProcessIdProperty, $process.Id))
     $button = Wait-For { $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $byName) } "the '$Name' button"
     $bounds = $button.Current.BoundingRectangle
@@ -196,7 +198,7 @@ try {
 
     # Settings panel: opens from the gear button, closes with Escape.
     Focus-App
-    Click-Button "Settings"
+    Click-Button "SettingsButton" -AutomationId
     $isPanel = New-Object System.Windows.Automation.AndCondition @(
         (New-Object System.Windows.Automation.PropertyCondition $automation::NameProperty, "Settings"),
         (New-Object System.Windows.Automation.PropertyCondition $automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window),
