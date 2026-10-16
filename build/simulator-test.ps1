@@ -41,7 +41,7 @@ $automation = [System.Windows.Automation.AutomationElement]
 
 $VK_LEFT = 0x25; $VK_UP = 0x26; $VK_RIGHT = 0x27; $VK_DOWN = 0x28
 $VK_ADD = 0x6B; $VK_SUBTRACT = 0x6D; $VK_RETURN = 0x0D; $VK_NUMLOCK = 0x90
-$KEYUP = 0x2; $EXTENDED = 0x1
+$KEYEVENTF_KEYUP = 0x2; $KEYEVENTF_EXTENDEDKEY = 0x1
 
 $dataFolder = Join-Path $env:APPDATA "TenveoPTZ"
 $logFolder = Join-Path $dataFolder "logs"
@@ -102,10 +102,10 @@ function Invoke-AndSettle([scriptblock] $Action, [string] $What) {
 }
 
 function Hold-Key([int] $Key, [int] $Milliseconds, [switch] $Extended) {
-    $flags = if ($Extended) { $EXTENDED } else { 0 }
+    $flags = if ($Extended) { $KEYEVENTF_EXTENDEDKEY } else { 0 }
     [Win32.Input]::keybd_event([byte]$Key, 0, $flags, [UIntPtr]::Zero)
     Start-Sleep -Milliseconds $Milliseconds
-    [Win32.Input]::keybd_event([byte]$Key, 0, $flags -bor $KEYUP, [UIntPtr]::Zero)
+    [Win32.Input]::keybd_event([byte]$Key, 0, $flags -bor $KEYEVENTF_KEYUP, [UIntPtr]::Zero)
 }
 
 function Press-Key([int] $Key) { Hold-Key $Key 50 }
@@ -126,10 +126,11 @@ function Focus-App {
 }
 
 function Click-Button([string] $Name) {
-    $condition = New-Object System.Windows.Automation.AndCondition @(
+    # Not named $condition: Wait-For's $Condition parameter would shadow it inside the script block.
+    $byName = New-Object System.Windows.Automation.AndCondition @(
         (New-Object System.Windows.Automation.PropertyCondition $automation::NameProperty, $Name),
         (New-Object System.Windows.Automation.PropertyCondition $automation::ProcessIdProperty, $process.Id))
-    $button = Wait-For { $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition) } "the '$Name' button"
+    $button = Wait-For { $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $byName) } "the '$Name' button"
     $bounds = $button.Current.BoundingRectangle
     [void][Win32.Input]::SetCursorPos([int]($bounds.X + $bounds.Width / 2), [int]($bounds.Y + $bounds.Height / 2))
     [Win32.Input]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)
