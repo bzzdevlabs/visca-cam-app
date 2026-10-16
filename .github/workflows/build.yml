@@ -76,6 +76,10 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: ./build/update-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe -ScreenshotDir dist/screenshots
 
+      - name: Live test on the simulated camera (keys, presets, keypad in the background)
+        shell: pwsh
+        run: ./build/simulator-test.ps1 -Exe src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe -ScreenshotDir dist/screenshots
+
       - name: Build installer
         run: dotnet build src/TenveoPtz.Installer --configuration Release -p:Version=${{ steps.version.outputs.version }}
 
