@@ -2,10 +2,11 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
-using AppKit;
 using AVFoundation;
+using AppKit;
 using Foundation;
 using TenveoPtz.Core.Diagnostics;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Session;
@@ -34,6 +35,7 @@ internal sealed class AppDelegate : NSApplicationDelegate
     private Logger log = Logger.Null;
     private MainWindow? window;
     private MainPresenter? presenter;
+    private XmlFileStore<AppSettings>? settingsStore;
 
     public AppDelegate(string[] args)
     {
@@ -48,6 +50,11 @@ internal sealed class AppDelegate : NSApplicationDelegate
         log = new Logger(new LogHub(debug ? LogLevel.Debug : LogLevel.Info, RecentLogEntries, new FileLogSink(logFolder)), "App");
         log.Info($"Tenveo PTZ {ParseVersion()} starting on macOS {NSProcessInfo.ProcessInfo.OperatingSystemVersionString} ({System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}), arguments: {string.Join(" ", args)}");
         AppDomain.CurrentDomain.UnhandledException += (_, e) => log.Error("Unhandled exception, the app is closing.", e.ExceptionObject as Exception);
+
+        // The menus and the window are built in this language, so it is read before they are created.
+        settingsStore = new XmlFileStore<AppSettings>(Path.Combine(DataFolder, "settings.xml"), log.For("Storage"));
+        Strings.Language = ParseLanguage(FindOption("--language=")) ?? settingsStore.Load().Language;
+        log.Info($"Language: {Strings.Language}.");
 
         NSApplication.SharedApplication.MainMenu = MainMenu.Create();
         ApplyTheme(FindOption("--theme="));
@@ -73,7 +80,7 @@ internal sealed class AppDelegate : NSApplicationDelegate
         http.Dispose();
         if (window?.RestartRequested == true)
         {
-            log.Info("Restarting after the update.");
+            log.Info("Restarting.");
             Relaunch();
         }
 
@@ -85,9 +92,6 @@ internal sealed class AppDelegate : NSApplicationDelegate
         var installer = new DiskImageInstaller(NSBundle.MainBundle.BundlePath);
         installer.DeleteLeftovers();
         var version = ParseVersion();
-        var dataFolder = Path.Combine(
-            NSFileManager.DefaultManager.GetUrls(NSSearchPathDirectory.ApplicationSupportDirectory, NSSearchPathDomain.User)[0].Path!,
-            DataFolderName);
 
         window = new MainWindow { ThemeFixedByCommandLine = FindOption("--theme=") is not null };
         var videoService = new AVFoundationVideoService(window.VideoView);
@@ -97,8 +101,8 @@ internal sealed class AppDelegate : NSApplicationDelegate
             videoService,
             serialPorts,
             new CameraSessionFactory(videoService, serialPorts, new RunLoopTickerFactory(), log.For("Session")),
-            new XmlFileStore<AppSettings>(Path.Combine(dataFolder, "settings.xml"), log.For("Storage")),
-            new XmlFileStore<PresetBook>(Path.Combine(dataFolder, "presets.xml"), log.For("Storage")),
+            settingsStore!,
+            new XmlFileStore<PresetBook>(Path.Combine(DataFolder, "presets.xml"), log.For("Storage")),
             new GitHubUpdateService(http, Repository, version, installer, ReleasePlatform.MacOS),
             version,
             log.For("Main"));
@@ -128,6 +132,20 @@ internal sealed class AppDelegate : NSApplicationDelegate
             }
         });
     }
+
+    /// <summary>~/Library/Application Support/TenveoPTZ: settings and presets.</summary>
+    private static string DataFolder => Path.Combine(
+        NSFileManager.DefaultManager.GetUrls(NSSearchPathDirectory.ApplicationSupportDirectory, NSSearchPathDomain.User)[0].Path!,
+        DataFolderName);
+
+    /// <summary>Reads <c>--language=fr|en</c> (used by the CI tests); <c>null</c> keeps the saved language.</summary>
+    private static AppLanguage? ParseLanguage(string? value) =>
+        value?.ToLowerInvariant() switch
+        {
+            "en" or "english" => AppLanguage.English,
+            "fr" or "french" => AppLanguage.French,
+            _ => null,
+        };
 
     /// <summary>Starts the (updated) bundle again once this process has exited and released the camera.</summary>
     private static void Relaunch()

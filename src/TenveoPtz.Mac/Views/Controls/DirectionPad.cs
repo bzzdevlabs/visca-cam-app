@@ -1,7 +1,8 @@
 using System;
+using System.Runtime.InteropServices;
 using AppKit;
 using CoreGraphics;
-using System.Runtime.InteropServices;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Ptz;
 
@@ -38,7 +39,7 @@ internal sealed class DirectionPad : NSView
         TranslatesAutoresizingMaskIntoConstraints = false;
         WidthAnchor.ConstraintEqualTo((NFloat)Size).Active = true;
         HeightAnchor.ConstraintEqualTo((NFloat)Size).Active = true;
-        ToolTip = "Hold a direction to move (or use the arrow keys). Centre: home position.";
+        ToolTip = Strings.PadTip;
     }
 
     public event EventHandler<PanTiltEventArgs>? PanTiltRequested;

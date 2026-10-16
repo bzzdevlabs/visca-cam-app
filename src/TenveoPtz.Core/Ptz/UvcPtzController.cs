@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using TenveoPtz.Core.Execution;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presets;
 
 namespace TenveoPtz.Core.Ptz;
@@ -91,7 +92,7 @@ public sealed class UvcPtzController : IPtzController
     {
         var position = RequirePreset(preset).Position
             ?? throw new InvalidOperationException(
-                $"Preset \"{preset.Name}\" was saved in VISCA mode; save it again in UVC mode to use it here.");
+                Strings.PresetSavedInVisca(preset.Name));
 
         StopAll();
         MoveTo(CameraAxis.Pan, position.Pan);
@@ -131,7 +132,7 @@ public sealed class UvcPtzController : IPtzController
         axis == CameraAxis.Tilt && axes.GetRange(CameraAxis.Pan) is { } pan ? Math.Max(range.Span, pan.Span) : range.Span;
 
     private AxisRange RequireRange(CameraAxis axis) =>
-        axes.GetRange(axis) ?? throw new NotSupportedException($"This camera does not expose {axis.ToString().ToLowerInvariant()} control over USB.");
+        axes.GetRange(axis) ?? throw new NotSupportedException(Strings.NoUsbControl(Strings.AxisName(axis.ToString())));
 
     private void SetMotion(CameraAxis axis, Motion direction, double speed)
     {

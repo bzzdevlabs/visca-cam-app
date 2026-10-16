@@ -31,6 +31,12 @@ on a virtual clock, and `build/simulator-test.ps1` runs the real app on it in CI
 zoom keys, presets saved with the **New** button and recalled with the number keys, and the
 numeric keypad while Notepad is in front.
 
+## Language
+
+The texts the user sees are in `src/TenveoPtz.Core/Localization/Strings.cs`, in English and French
+side by side; the log and the debug console stay in English. `--language=en` or `--language=fr`
+starts the app in that language whatever is saved, as the CI tests do.
+
 ## Windows installer
 
 The installer builds on Windows only (WiX Toolset 5, restored automatically), from the app built

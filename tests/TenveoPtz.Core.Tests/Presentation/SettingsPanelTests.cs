@@ -165,6 +165,72 @@ public sealed class SettingsPanelTests : IDisposable
     }
 
     [Fact]
+    public void ChangingTheLanguage_SavesItAndOffersARestart()
+    {
+        view.Load();
+        view.SettingsAnswer = edited =>
+        {
+            edited.Language = AppLanguage.English;
+            return SettingsEdit.Save(edited);
+        };
+
+        view.OpenSettings();
+
+        Assert.Equal(AppLanguage.English, settingsStore.Saved!.Language);
+        Assert.Equal("Restart Tenveo PTZ now to show it in English?", Assert.Single(view.Confirmations));
+        Assert.True(view.Restarted);
+    }
+
+    [Fact]
+    public void ChangingTheLanguage_WithoutRestart_SaysWhenItApplies()
+    {
+        settingsStore.Save(new AppSettings { Language = AppLanguage.English });
+        view.Load();
+        view.ConfirmAnswer = false;
+        view.SettingsAnswer = edited =>
+        {
+            edited.Language = AppLanguage.French;
+            return SettingsEdit.Save(edited);
+        };
+
+        view.OpenSettings();
+
+        Assert.Equal(AppLanguage.French, settingsStore.Saved!.Language);
+        Assert.False(view.Restarted);
+        Assert.Equal("Settings saved. The new language shows the next time Tenveo PTZ starts.", view.Status);
+    }
+
+    [Fact]
+    public void SavingWithTheSameLanguage_DoesNotOfferARestart()
+    {
+        view.Load();
+        view.SettingsAnswer = edited =>
+        {
+            edited.InvertTilt = true;
+            return SettingsEdit.Save(edited);
+        };
+
+        view.OpenSettings();
+
+        Assert.Empty(view.Confirmations);
+        Assert.False(view.Restarted);
+    }
+
+    [Fact]
+    public void Reset_BackToFrench_OffersARestart()
+    {
+        settingsStore.Save(new AppSettings { Language = AppLanguage.English });
+        view.Load();
+        view.SettingsAnswer = _ => SettingsEdit.Reset();
+
+        view.OpenSettings();
+
+        Assert.Equal(AppLanguage.French, settingsStore.Saved!.Language);
+        Assert.Equal(2, view.Confirmations.Count);
+        Assert.True(view.Restarted);
+    }
+
+    [Fact]
     public void Reset_AsksFirst()
     {
         settingsStore.Save(new AppSettings { InvertPan = true });

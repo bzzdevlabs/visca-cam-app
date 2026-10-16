@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using TenveoPtz.Core.Diagnostics;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Ptz;
 using TenveoPtz.Core.Session;
@@ -96,7 +97,7 @@ public sealed partial class MainPresenter : IDisposable
         }
         else
         {
-            ShowStatus("Choose the camera and how to control it, then press Connect.", false);
+            ShowStatus(Strings.ChooseCameraThenConnect, false);
         }
     }
 
@@ -124,7 +125,7 @@ public sealed partial class MainPresenter : IDisposable
         }
         catch (Exception ex)
         {
-            ShowStatus("Could not list devices: " + ex.Message, true, ex);
+            ShowStatus(Strings.CouldNotListDevices(ex.Message), true, ex);
         }
     }
 
@@ -151,7 +152,7 @@ public sealed partial class MainPresenter : IDisposable
         catch (Exception ex)
         {
             view.ShowConnected(false);
-            ShowStatus("Connection failed: " + ex.Message, true, ex);
+            ShowStatus(Strings.ConnectionFailed(ex.Message), true, ex);
             return;
         }
 
@@ -159,7 +160,7 @@ public sealed partial class MainPresenter : IDisposable
         settings.AutoConnect = true;
         TrySave(() => settingsStore.Save(settings));
         view.ShowConnected(true);
-        ShowStatus("Connected: " + session.Description + (options.ShowPreview ? "." : ". Preview off: other apps such as Zoom can use the camera."), false);
+        ShowStatus(Strings.Connected(session.Description, options.ShowPreview), false);
     }
 
     private void Disconnect()
@@ -169,7 +170,7 @@ public sealed partial class MainPresenter : IDisposable
         TrySave(() => settingsStore.Save(settings));
 
         view.ShowConnected(false);
-        ShowStatus("Disconnected.", false);
+        ShowStatus(Strings.Disconnected, false);
     }
 
     private void CloseSession()
@@ -236,7 +237,7 @@ public sealed partial class MainPresenter : IDisposable
         }
         catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is InvalidOperationException)
         {
-            ShowStatus("Could not save settings: " + ex.Message, true, ex);
+            ShowStatus(Strings.CouldNotSaveSettings(ex.Message), true, ex);
         }
     }
 }

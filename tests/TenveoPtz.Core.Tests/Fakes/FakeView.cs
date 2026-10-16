@@ -87,6 +87,8 @@ internal sealed class FakeView : IMainView
 
     public bool ConfirmAnswer { get; set; } = true;
 
+    public List<string> Confirmations { get; } = new();
+
     public bool UpdateAnswer { get; set; } = true;
 
     public string? UpdateQuestion { get; private set; }
@@ -113,7 +115,11 @@ internal sealed class FakeView : IMainView
 
     public string? PromptText(string title, string prompt, string initialValue) => PromptAnswer;
 
-    public bool Confirm(string message) => ConfirmAnswer;
+    public bool Confirm(string message)
+    {
+        Confirmations.Add(message);
+        return ConfirmAnswer;
+    }
 
     public SettingsEdit? EditSettings(AppSettings settings)
     {

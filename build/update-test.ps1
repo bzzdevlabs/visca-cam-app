@@ -82,7 +82,7 @@ $copy = Join-Path $work (Split-Path $Exe -Leaf)
 $before = (Get-Item $copy).VersionInfo.FileVersion
 Write-Host "Copied version $before to $work"
 
-$process = Start-Process -FilePath $copy -ArgumentList "--simulate-version=0.0.0.1" -PassThru
+$process = Start-Process -FilePath $copy -ArgumentList "--simulate-version=0.0.0.1", "--language=en" -PassThru
 $restarted = $null
 try {
     $dialog = Wait-For { Find-Named $automation::RootElement "Update available" $process.Id } "the 'Update available' prompt"

@@ -149,7 +149,7 @@ function Save-Preset([int] $Number) {
     Write-Host "Saved preset $Number."
 }
 
-# Simulated camera, preview on, continuous moves off (the default), keypad active in the background.
+# Simulated camera, English (the checks read the log and button names), preview on, continuous moves off (the default), keypad active in the background.
 New-Item -ItemType Directory -Force $dataFolder | Out-Null
 Remove-Item (Join-Path $logFolder "*") -ErrorAction SilentlyContinue
 @"
@@ -160,6 +160,7 @@ Remove-Item (Join-Path $logFolder "*") -ErrorAction SilentlyContinue
   <Speed>0.5</Speed>
   <BackgroundNumpad>true</BackgroundNumpad>
   <CheckForUpdates>false</CheckForUpdates>
+  <Language>English</Language>
 </AppSettings>
 "@ | Set-Content -Encoding UTF8 (Join-Path $dataFolder "settings.xml")
 "<?xml version=`"1.0`" encoding=`"utf-8`"?><Presets />" | Set-Content -Encoding UTF8 (Join-Path $dataFolder "presets.xml")

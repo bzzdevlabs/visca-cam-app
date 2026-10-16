@@ -5,33 +5,35 @@ using System.Linq;
 using System.Windows.Forms;
 using TenveoPtz.App.Views.Controls;
 using TenveoPtz.App.Views.Theming;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Settings;
 
 namespace TenveoPtz.App.Views;
 
 /// <summary>
-/// Settings panel: camera directions and move mode, keyboard, window, updates, the data folder and
-/// a reset of every setting. Edits a copy of the settings; the presenter applies the result.
+/// Settings panel: camera directions and move mode, keyboard, window and language, updates, the
+/// data folder and a reset of every setting. Edits a copy of the settings; the presenter applies the result.
 /// </summary>
 internal sealed class SettingsDialog : Form
 {
     private const int ContentWidth = 440;
 
     private readonly AppSettings settings;
-    private readonly ToggleSwitch invertPan = new("Reverse left and right");
-    private readonly ToggleSwitch invertTilt = new("Reverse up and down");
-    private readonly ToggleSwitch continuousMoves = new("Continuous USB moves (experimental)");
-    private readonly ToggleSwitch backgroundNumpad = new("Numeric keypad works while another app is in front");
-    private readonly ToggleSwitch alwaysOnTop = new("Keep the window on top of other windows");
-    private readonly DropDownSelector theme = new(200, "Theme");
-    private readonly ToggleSwitch checkForUpdates = new("Look for a new version on start-up");
+    private readonly ToggleSwitch invertPan = new(Strings.ReverseLeftRight);
+    private readonly ToggleSwitch invertTilt = new(Strings.ReverseUpDown);
+    private readonly ToggleSwitch continuousMoves = new(Strings.ContinuousUsbMoves);
+    private readonly ToggleSwitch backgroundNumpad = new(Strings.BackgroundNumpad);
+    private readonly ToggleSwitch alwaysOnTop = new(Strings.KeepWindowOnTop);
+    private readonly DropDownSelector theme = new(200, Strings.Theme);
+    private readonly DropDownSelector language = new(200, Strings.LanguageLabel);
+    private readonly ToggleSwitch checkForUpdates = new(Strings.CheckForUpdates);
     private bool resetRequested;
 
     private SettingsDialog(AppSettings settings, string dataFolder)
     {
         this.settings = settings;
-        Text = "Settings";
+        Text = Strings.Settings;
         Font = FluentFonts.Body;
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoScaleDimensions = new SizeF(96F, 96F);
@@ -52,37 +54,47 @@ internal sealed class SettingsDialog : Form
         backgroundNumpad.Checked = settings.BackgroundNumpad;
         alwaysOnTop.Checked = settings.AlwaysOnTop;
         checkForUpdates.Checked = settings.CheckForUpdates;
-        theme.SetItems(new object[] { new ThemeChoice(AppTheme.System, "Same as Windows"), new ThemeChoice(AppTheme.Light, "Light"), new ThemeChoice(AppTheme.Dark, "Dark") });
-        theme.SelectedItem = theme.Items.OfType<ThemeChoice>().First(c => c.Value == settings.Theme);
+        theme.SetItems(new object[]
+        {
+            new Choice<AppTheme>(AppTheme.System, Strings.ThemeSameAsSystem("Windows")),
+            new Choice<AppTheme>(AppTheme.Light, Strings.ThemeLight),
+            new Choice<AppTheme>(AppTheme.Dark, Strings.ThemeDark),
+        });
+        theme.SelectedItem = theme.Items.OfType<Choice<AppTheme>>().First(c => c.Value == settings.Theme);
+        language.SetItems(new object[] { Language(AppLanguage.French), Language(AppLanguage.English) });
+        language.SelectedItem = language.Items.OfType<Choice<AppLanguage>>().First(c => c.Value == settings.Language);
 
         var content = new TableLayoutPanel { ColumnCount = 1, AutoSize = true, Padding = new Padding(24, 20, 24, 16), Margin = new Padding(0) };
-        content.Controls.Add(new Label { Text = "Settings", Font = FluentFonts.Subtitle, ForeColor = Theme.Current.Text, AutoSize = true, Margin = new Padding(0, 0, 0, 8) });
+        content.Controls.Add(new Label { Text = Strings.Settings, Font = FluentFonts.Subtitle, ForeColor = Theme.Current.Text, AutoSize = true, Margin = new Padding(0, 0, 0, 8) });
 
-        Section(content, "Camera");
+        Section(content, Strings.Camera);
         content.Controls.Add(invertPan);
         content.Controls.Add(invertTilt);
         content.Controls.Add(continuousMoves);
-        Note(content, "USB (UVC) only: smoother moves using the camera's own motion. Some cameras ignore it or report wrong positions afterwards; turn it off if the controls stop working or presets come back wrong.");
+        Note(content, Strings.ContinuousUsbMovesNote);
 
-        Section(content, "Keyboard");
+        Section(content, Strings.Keyboard);
         content.Controls.Add(backgroundNumpad);
-        Note(content, "Windows takes the keypad keys from the app in front while the camera is connected. Num Lock off: 8 4 6 2 move, 7 home, 9 3 zoom. Num Lock on: 1-9 presets. + and - zoom.");
+        Note(content, Strings.BackgroundNumpadNote);
 
-        Section(content, "Window");
+        Section(content, Strings.Window);
         content.Controls.Add(alwaysOnTop);
-        var themeRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 4, 0, 0) };
-        themeRow.Controls.Add(new Label { Text = "Theme", AutoSize = true, ForeColor = Theme.Current.Text, Margin = new Padding(2, 8, 12, 0) });
-        themeRow.Controls.Add(theme);
-        content.Controls.Add(themeRow);
+        var choices = new TableLayoutPanel { AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 4, 0, 0) };
+        choices.Controls.Add(ChoiceLabel(Strings.Theme), 0, 0);
+        choices.Controls.Add(theme, 1, 0);
+        choices.Controls.Add(ChoiceLabel(Strings.LanguageLabel), 0, 1);
+        choices.Controls.Add(language, 1, 1);
+        content.Controls.Add(choices);
+        Note(content, Strings.LanguageNote);
 
-        Section(content, "Updates");
+        Section(content, Strings.Updates);
         content.Controls.Add(checkForUpdates);
 
-        Section(content, "Settings and presets");
-        Note(content, $"Stored in {dataFolder}.");
-        var openFolder = new FluentButton("Open folder") { Margin = new Padding(0, 4, 8, 0) };
+        Section(content, Strings.SettingsAndPresets);
+        Note(content, Strings.StoredIn(dataFolder));
+        var openFolder = new FluentButton(Strings.OpenFolder) { Margin = new Padding(0, 4, 8, 0) };
         openFolder.Click += (_, _) => OpenFolder(dataFolder);
-        var reset = new FluentButton("Reset all settings...") { Margin = new Padding(0, 4, 0, 0) };
+        var reset = new FluentButton(Strings.ResetAllSettings) { Margin = new Padding(0, 4, 0, 0) };
         reset.Click += (_, _) =>
         {
             resetRequested = true;
@@ -93,8 +105,8 @@ internal sealed class SettingsDialog : Form
         dataRow.Controls.Add(reset);
         content.Controls.Add(dataRow);
 
-        var save = new FluentButton("Save", appearance: ButtonAppearance.Accent) { AutoSize = false, Size = new Size(150, 32), Margin = new Padding(0, 0, 8, 0) };
-        var cancel = new FluentButton("Cancel") { AutoSize = false, Size = new Size(150, 32), Margin = new Padding(0) };
+        var save = new FluentButton(Strings.Save, appearance: ButtonAppearance.Accent) { AutoSize = false, Size = new Size(150, 32), Margin = new Padding(0, 0, 8, 0) };
+        var cancel = new FluentButton(Strings.Cancel) { AutoSize = false, Size = new Size(150, 32), Margin = new Padding(0) };
         save.Click += (_, _) => CloseWith(DialogResult.OK);
         cancel.Click += (_, _) => CloseWith(DialogResult.Cancel);
         var footer = new FlowLayoutPanel
@@ -147,6 +159,12 @@ internal sealed class SettingsDialog : Form
     private static void Section(TableLayoutPanel content, string title) =>
         content.Controls.Add(new Label { Text = title, Font = FluentFonts.BodyStrong, ForeColor = Theme.Current.Text, AutoSize = true, Margin = new Padding(0, 16, 0, 2) });
 
+    private static Label ChoiceLabel(string text) =>
+        new() { Text = text, AutoSize = true, ForeColor = Theme.Current.Text, Anchor = AnchorStyles.Left, Margin = new Padding(2, 4, 12, 4) };
+
+    /// <summary>Languages are listed by their own name, whatever the current language.</summary>
+    private static Choice<AppLanguage> Language(AppLanguage value) => new(value, Strings.NameOf(value));
+
     private static void Note(TableLayoutPanel content, string text) =>
         content.Controls.Add(new Label
         {
@@ -179,7 +197,8 @@ internal sealed class SettingsDialog : Form
         settings.BackgroundNumpad = backgroundNumpad.Checked;
         settings.AlwaysOnTop = alwaysOnTop.Checked;
         settings.CheckForUpdates = checkForUpdates.Checked;
-        settings.Theme = (theme.SelectedItem as ThemeChoice)?.Value ?? AppTheme.System;
+        settings.Theme = (theme.SelectedItem as Choice<AppTheme>)?.Value ?? AppTheme.System;
+        settings.Language = (language.SelectedItem as Choice<AppLanguage>)?.Value ?? settings.Language;
         return settings;
     }
 
@@ -187,20 +206,5 @@ internal sealed class SettingsDialog : Form
     {
         DialogResult = result;
         Close();
-    }
-
-    private sealed class ThemeChoice
-    {
-        public ThemeChoice(AppTheme value, string label)
-        {
-            Value = value;
-            Label = label;
-        }
-
-        public AppTheme Value { get; }
-
-        public string Label { get; }
-
-        public override string ToString() => Label;
     }
 }

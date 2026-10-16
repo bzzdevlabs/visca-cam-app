@@ -11,6 +11,7 @@ using TenveoPtz.App.Infrastructure.Timing;
 using TenveoPtz.App.Views;
 using TenveoPtz.App.Views.Theming;
 using TenveoPtz.Core.Diagnostics;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Session;
@@ -52,22 +53,27 @@ internal static class Program
         var installer = new UpdateInstaller(AppDomain.CurrentDomain.BaseDirectory, Path.GetFileName(Application.ExecutablePath));
         installer.DeleteLeftovers();
 
+        // The windows are built in this language, so it is read before they are created.
+        var settingsStore = new XmlFileStore<AppSettings>(Path.Combine(dataFolder, "settings.xml"), log.For("Storage"));
+        Strings.Language = ParseLanguage(args) ?? settingsStore.Load().Language;
+        log.Info($"Language: {Strings.Language}.");
+
         var debugTools = new DebugTools(logHub, dataFolder, logFolder);
         var themeFixed = FindOption(args, "--theme=") is not null;
-        if (Run(installer, ParseVersion(args), debugTools, debug, ParseSimulator(args), themeFixed))
+        if (Run(installer, ParseVersion(args), debugTools, debug, ParseSimulator(args), themeFixed, settingsStore))
         {
             // Started once the window is closed and the camera released, so the new instance can open it.
-                log.Info("Restarting after the update.");
+            log.Info("Restarting.");
             Process.Start(Application.ExecutablePath);
         }
 
         log.Info("Exited.");
     }
 
-    /// <summary>Shows the main window until it closes; returns whether an update asked for a restart.</summary>
+    /// <summary>Shows the main window until it closes; returns whether an update or a language change asked for a restart.</summary>
     /// <param name="simulator">Quirks of the "PTZ Simulator" camera to offer, or <c>null</c> for no simulator.</param>
     /// <param name="themeFixed">The theme was given on the command line: the saved theme does not replace it.</param>
-    private static bool Run(UpdateInstaller installer, Version version, DebugTools debugTools, bool showDebugConsole, SimulatedCameraQuirks? simulator, bool themeFixed)
+    private static bool Run(UpdateInstaller installer, Version version, DebugTools debugTools, bool showDebugConsole, SimulatedCameraQuirks? simulator, bool themeFixed, IStore<AppSettings> settingsStore)
     {
         var dataFolder = debugTools.DataFolder;
 
@@ -86,7 +92,7 @@ internal static class Program
             videoService,
             serialPorts,
             new CameraSessionFactory(videoService, serialPorts, tickers, log.For("Session")),
-            new XmlFileStore<AppSettings>(Path.Combine(dataFolder, "settings.xml"), log.For("Storage")),
+            settingsStore,
             new XmlFileStore<PresetBook>(Path.Combine(dataFolder, "presets.xml"), log.For("Storage")),
             new GitHubUpdateService(http, Repository, version, installer),
             version,
@@ -102,6 +108,15 @@ internal static class Program
         var value = FindOption(args, "--theme=");
         return value is not null && Enum.TryParse<ThemeMode>(value, ignoreCase: true, out var mode) ? mode : ThemeMode.System;
     }
+
+    /// <summary>Reads <c>--language=fr|en</c> (used by the CI tests); <c>null</c> keeps the saved language.</summary>
+    private static AppLanguage? ParseLanguage(string[] args) =>
+        FindOption(args, "--language=")?.ToLowerInvariant() switch
+        {
+            "en" or "english" => AppLanguage.English,
+            "fr" or "french" => AppLanguage.French,
+            _ => null,
+        };
 
     /// <summary>
     /// Version used for the update check: the assembly's, unless <c>--simulate-version=x.y.z</c>
@@ -148,8 +163,8 @@ internal static class Program
     {
         log.Error("Unexpected error.", exception);
         MessageBox.Show(
-            exception.Message + Environment.NewLine + Environment.NewLine + "Details were written to the log (Ctrl+Shift+D opens the debug console).",
-            "Tenveo PTZ - unexpected error",
+            exception.Message + Environment.NewLine + Environment.NewLine + Strings.DetailsInLog,
+            Strings.UnexpectedErrorTitle,
             MessageBoxButtons.OK,
             MessageBoxIcon.Error);
     }

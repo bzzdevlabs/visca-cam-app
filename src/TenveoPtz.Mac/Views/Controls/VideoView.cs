@@ -1,6 +1,7 @@
 using AppKit;
 using CoreAnimation;
 using CoreGraphics;
+using TenveoPtz.Core.Localization;
 
 namespace TenveoPtz.Mac.Views.Controls;
 
@@ -17,10 +18,10 @@ internal sealed class VideoView : NSView
         Layer.CornerRadius = 8;
         Layer.MasksToBounds = true;
 
-        var title = NSTextField.CreateLabel("No video");
+        var title = NSTextField.CreateLabel(Strings.NoVideoTitle);
         title.Font = NSFont.SystemFontOfSize(17, NSFontWeight.Semibold)!;
         title.TextColor = NSColor.White;
-        var text = NSTextField.CreateLabel("Choose the camera above, then press Connect.");
+        var text = NSTextField.CreateLabel(Strings.NoVideoHint);
         text.TextColor = NSColor.FromWhite(1, 0.7f);
         placeholder = NSStackView.FromViews(new NSView[] { title, text });
         placeholder.Orientation = NSUserInterfaceLayoutOrientation.Vertical;

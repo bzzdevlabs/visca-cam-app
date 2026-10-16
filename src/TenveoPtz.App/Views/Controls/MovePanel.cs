@@ -1,6 +1,7 @@
 using System;
 using System.Windows.Forms;
 using TenveoPtz.App.Views.Theming;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presentation;
 
 namespace TenveoPtz.App.Views.Controls;
@@ -11,7 +12,7 @@ internal sealed class MovePanel : UserControl
     private const int SpeedSteps = 10;
 
     private readonly FluentSlider speed = new(1, SpeedSteps, SpeedSteps / 2) { Dock = DockStyle.Fill };
-    private readonly ToggleSwitch precise = new("Precise") { Anchor = AnchorStyles.Left };
+    private readonly ToggleSwitch precise = new(Strings.Precise) { Anchor = AnchorStyles.Left };
 
     public MovePanel(ToolTip toolTips)
     {
@@ -21,10 +22,10 @@ internal sealed class MovePanel : UserControl
         var pad = new DirectionPad { Anchor = AnchorStyles.None, Margin = new Padding(0, 0, 0, 4) };
         pad.PanTiltRequested += (_, e) => PanTiltRequested?.Invoke(this, e);
         pad.HomeRequested += (_, e) => HomeRequested?.Invoke(this, e);
-        toolTips.SetToolTip(pad, "Hold a direction to move (or use the arrow keys). Centre: home position.");
-        toolTips.SetToolTip(speed, "Pan, tilt and zoom speed");
+        toolTips.SetToolTip(pad, Strings.PadTip);
+        toolTips.SetToolTip(speed, Strings.SpeedTip);
         speed.ValueChanged += (_, e) => SpeedChanged?.Invoke(this, e);
-        toolTips.SetToolTip(precise, "Much slower moves for fine framing (or hold Shift)");
+        toolTips.SetToolTip(precise, Strings.PreciseTip);
         precise.CheckedChanged += (_, e) => PreciseChanged?.Invoke(this, e);
 
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 3 };
@@ -32,12 +33,12 @@ internal sealed class MovePanel : UserControl
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.Controls.Add(pad, 0, 0);
         layout.SetColumnSpan(pad, 2);
-        layout.Controls.Add(new Label { Text = "Speed", AutoSize = true, Anchor = AnchorStyles.Left, Font = FluentFonts.Body, ForeColor = Theme.Current.TextSecondary }, 0, 1);
+        layout.Controls.Add(new Label { Text = Strings.Speed, AutoSize = true, Anchor = AnchorStyles.Left, Font = FluentFonts.Body, ForeColor = Theme.Current.TextSecondary }, 0, 1);
         layout.Controls.Add(speed, 1, 1);
         layout.Controls.Add(precise, 0, 2);
         layout.SetColumnSpan(precise, 2);
 
-        var card = new Card("Pan and tilt") { Dock = DockStyle.Fill, AutoSize = true };
+        var card = new Card(Strings.PanAndTilt) { Dock = DockStyle.Fill, AutoSize = true };
         card.Controls.Add(layout);
         Controls.Add(card);
         Theme.Changed += OnThemeChanged;

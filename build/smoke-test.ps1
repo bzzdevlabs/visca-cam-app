@@ -72,6 +72,8 @@ if ($SamplePresets) {
 }
 
 $sampleModes = @{ light = "Uvc"; dark = "Visca" }
+# The light run shows the app in French (the default), the dark run in English.
+$sampleLanguages = @{ light = "French"; dark = "English" }
 
 foreach ($theme in $Themes) {
     if ($SamplePresets -and $sampleModes.ContainsKey($theme)) {
@@ -80,6 +82,7 @@ foreach ($theme in $Themes) {
 <AppSettings>
   <Connection><Mode>$($sampleModes[$theme])</Mode><BaudRate>9600</BaudRate><Address>1</Address></Connection>
   <Speed>0.5</Speed>
+  <Language>$($sampleLanguages[$theme])</Language>
 </AppSettings>
 "@ | Set-Content -Encoding UTF8 (Join-Path $env:APPDATA "TenveoPTZ\settings.xml")
     }

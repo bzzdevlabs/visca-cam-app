@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using TenveoPtz.Core.Localization;
 
 namespace TenveoPtz.Core.Updates;
 
@@ -29,7 +30,7 @@ public sealed class UpdateInstaller : IPackageInstaller
     {
         if (!IsWindowsExecutable(packagePath))
         {
-            throw new InvalidDataException("The downloaded update is not a Windows program.");
+            throw new InvalidDataException(Strings.UpdateNotWindowsProgram);
         }
 
         var target = Path.Combine(installFolder, executableName);

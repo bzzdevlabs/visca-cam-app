@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 using TenveoPtz.App.Views.Theming;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Ptz;
 
@@ -10,7 +11,7 @@ namespace TenveoPtz.App.Views.Controls;
 /// <summary>"Zoom and focus" card (hold the buttons to adjust).</summary>
 internal sealed class LensPanel : UserControl
 {
-    private readonly ToggleSwitch autoFocus = new("Autofocus") { Checked = true, Anchor = AnchorStyles.Left };
+    private readonly ToggleSwitch autoFocus = new(Strings.Autofocus) { Checked = true, Anchor = AnchorStyles.Left };
     private readonly FluentButton focusNear;
     private readonly FluentButton focusFar;
 
@@ -19,24 +20,24 @@ internal sealed class LensPanel : UserControl
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
-        var zoomOut = Hold(Glyphs.ZoomOut, string.Empty, "Zoom out (hold, or - / Page Down)", toolTips, Motion.Negative, RaiseZoom);
-        var zoomIn = Hold(Glyphs.ZoomIn, string.Empty, "Zoom in (hold, or + / Page Up)", toolTips, Motion.Positive, RaiseZoom);
-        focusNear = Hold(null, "Near", "Focus nearer (hold)", toolTips, Motion.Negative, RaiseFocus);
-        focusFar = Hold(null, "Far", "Focus farther (hold)", toolTips, Motion.Positive, RaiseFocus);
+        var zoomOut = Hold(Glyphs.ZoomOut, string.Empty, Strings.ZoomOutTip, toolTips, Motion.Negative, RaiseZoom);
+        var zoomIn = Hold(Glyphs.ZoomIn, string.Empty, Strings.ZoomInTip, toolTips, Motion.Positive, RaiseZoom);
+        focusNear = Hold(null, Strings.Near, Strings.FocusNearTip, toolTips, Motion.Negative, RaiseFocus);
+        focusFar = Hold(null, Strings.Far, Strings.FocusFarTip, toolTips, Motion.Positive, RaiseFocus);
         autoFocus.CheckedChanged += (_, _) => OnAutoFocusChanged();
 
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 3, RowCount = 2 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        layout.Controls.Add(new Label { Text = "Zoom", AutoSize = true, Anchor = AnchorStyles.Left, Font = FluentFonts.Body, ForeColor = Theme.Current.TextSecondary }, 0, 0);
+        layout.Controls.Add(new Label { Text = Strings.Zoom, AutoSize = true, Anchor = AnchorStyles.Left, Font = FluentFonts.Body, ForeColor = Theme.Current.TextSecondary }, 0, 0);
         layout.Controls.Add(zoomOut, 1, 0);
         layout.Controls.Add(zoomIn, 2, 0);
         layout.Controls.Add(autoFocus, 0, 1);
         layout.Controls.Add(focusNear, 1, 1);
         layout.Controls.Add(focusFar, 2, 1);
 
-        var card = new Card("Zoom and focus") { Dock = DockStyle.Fill, AutoSize = true };
+        var card = new Card(Strings.ZoomAndFocus) { Dock = DockStyle.Fill, AutoSize = true };
         card.Controls.Add(layout);
         Controls.Add(card);
         UpdateFocusButtons();

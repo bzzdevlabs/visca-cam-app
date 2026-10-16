@@ -1,5 +1,6 @@
 using AppKit;
 using ObjCRuntime;
+using TenveoPtz.Core.Localization;
 
 namespace TenveoPtz.Mac;
 
@@ -10,27 +11,27 @@ internal static class MainMenu
     {
         var menu = new NSMenu();
         menu.AddItem(Submenu("Tenveo PTZ",
-            Item("About Tenveo PTZ", "orderFrontStandardAboutPanel:"),
+            Item(Strings.About, "orderFrontStandardAboutPanel:"),
             NSMenuItem.SeparatorItem,
-            Item("Settings...", "showSettings:", ","),
+            Item(Strings.SettingsMenu, "showSettings:", ","),
             NSMenuItem.SeparatorItem,
-            Item("Hide Tenveo PTZ", "hide:", "h"),
-            Item("Hide Others", "hideOtherApplications:", "h", NSEventModifierMask.CommandKeyMask | NSEventModifierMask.AlternateKeyMask),
-            Item("Show All", "unhideAllApplications:"),
+            Item(Strings.Hide, "hide:", "h"),
+            Item(Strings.HideOthers, "hideOtherApplications:", "h", NSEventModifierMask.CommandKeyMask | NSEventModifierMask.AlternateKeyMask),
+            Item(Strings.ShowAll, "unhideAllApplications:"),
             NSMenuItem.SeparatorItem,
-            Item("Quit Tenveo PTZ", "terminate:", "q")));
-        menu.AddItem(Submenu("Edit",
-            Item("Undo", "undo:", "z"),
-            Item("Redo", "redo:", "Z"),
+            Item(Strings.Quit, "terminate:", "q")));
+        menu.AddItem(Submenu(Strings.Edit,
+            Item(Strings.Undo, "undo:", "z"),
+            Item(Strings.Redo, "redo:", "Z"),
             NSMenuItem.SeparatorItem,
-            Item("Cut", "cut:", "x"),
-            Item("Copy", "copy:", "c"),
-            Item("Paste", "paste:", "v"),
-            Item("Select All", "selectAll:", "a")));
-        var window = Submenu("Window",
-            Item("Minimize", "performMiniaturize:", "m"),
-            Item("Zoom", "performZoom:"),
-            Item("Close", "performClose:", "w"));
+            Item(Strings.Cut, "cut:", "x"),
+            Item(Strings.Copy, "copy:", "c"),
+            Item(Strings.Paste, "paste:", "v"),
+            Item(Strings.SelectAll, "selectAll:", "a")));
+        var window = Submenu(Strings.Window,
+            Item(Strings.Minimize, "performMiniaturize:", "m"),
+            Item(Strings.ZoomWindow, "performZoom:"),
+            Item(Strings.Close, "performClose:", "w"));
         menu.AddItem(window);
         NSApplication.SharedApplication.WindowsMenu = window.Submenu!;
         return menu;

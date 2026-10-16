@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using TenveoPtz.App.Views.Theming;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Settings;
@@ -135,10 +136,8 @@ internal sealed partial class MainForm : Form, IMainView
         heldInBackground.Clear();
         connectionBar.ShowConnected(connected);
         var previewing = connected && connectionBar.Options.ShowPreview;
-        videoSurface.PlaceholderTitle = connected ? "Preview off" : "No video";
-        videoSurface.PlaceholderText = connected
-            ? "The camera is free for other apps such as Zoom. Turn Preview on to see it here."
-            : "Choose the camera above, then select Connect.";
+        videoSurface.PlaceholderTitle = connected ? Strings.PreviewOffTitle : Strings.NoVideoTitle;
+        videoSurface.PlaceholderText = connected ? Strings.PreviewOffHint : Strings.NoVideoHint;
         videoSurface.ShowPlaceholder = !previewing;
     }
 
@@ -148,11 +147,11 @@ internal sealed partial class MainForm : Form, IMainView
 
     public string? PromptText(string title, string prompt, string initialValue) => FluentDialog.Prompt(this, title, prompt, initialValue);
 
-    public bool Confirm(string message) => FluentDialog.Confirm(this, "Are you sure?", message, "Yes");
+    public bool Confirm(string message) => FluentDialog.Confirm(this, Strings.AreYouSure, message, Strings.Yes);
 
     public SettingsEdit? EditSettings(AppSettings settings) => SettingsDialog.Show(this, settings, debugTools.DataFolder);
 
-    public bool ConfirmUpdate(string message) => FluentDialog.Confirm(this, "Update available", message, "Update", "Not now");
+    public bool ConfirmUpdate(string message) => FluentDialog.Confirm(this, Strings.UpdateAvailable, message, Strings.Update, Strings.NotNow);
 
     public void Restart()
     {

@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using TenveoPtz.App.Views.Controls;
 using TenveoPtz.App.Views.Theming;
+using TenveoPtz.Core.Localization;
 
 namespace TenveoPtz.App.Views;
 
@@ -61,8 +62,8 @@ internal sealed partial class MainForm
         {
             Dock = DockStyle.Fill,
             Margin = new Padding(0, 0, Gap, 0),
-            PlaceholderTitle = "No video",
-            PlaceholderText = "Choose the camera above, then select Connect.",
+            PlaceholderTitle = Strings.NoVideoTitle,
+            PlaceholderText = Strings.NoVideoHint,
         };
         statusLine = new StatusLine { Dock = DockStyle.Fill, Margin = new Padding(0, 4, 0, 0) };
 

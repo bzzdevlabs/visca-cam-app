@@ -33,6 +33,9 @@ public sealed class AppSettings
 
     public AppTheme Theme { get; set; } = AppTheme.System;
 
+    /// <summary>Language of the user interface; applies when the app starts.</summary>
+    public AppLanguage Language { get; set; } = AppLanguage.French;
+
     /// <summary>Independent copy, for the settings panel to edit.</summary>
     public AppSettings Clone()
     {

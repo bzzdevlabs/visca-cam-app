@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presets;
 
 namespace TenveoPtz.Core.Presentation;
@@ -22,11 +23,11 @@ public sealed partial class MainPresenter
     {
         if (session is null)
         {
-            ShowStatus("Connect to the camera before saving a preset.", true);
+            ShowStatus(Strings.ConnectBeforeSavingPreset, true);
             return;
         }
 
-        var name = view.PromptText("New preset", "Name of the current camera position:", $"Preset {presets.Items.Count + 1}");
+        var name = view.PromptText(Strings.NewPresetTitle, Strings.NewPresetPrompt, Strings.DefaultPresetName(presets.Items.Count + 1));
         if (name is null)
         {
             return;
@@ -49,7 +50,7 @@ public sealed partial class MainPresenter
             return;
         }
 
-        SavePresets(preset, $"Saved preset \"{preset.Name}\".");
+        SavePresets(preset, Strings.SavedPreset(preset.Name));
     }
 
     private void RecallPreset(Preset preset)
@@ -57,7 +58,7 @@ public sealed partial class MainPresenter
         if (WithCamera(ptz => ptz.RecallPreset(preset)))
         {
             view.ShowPresets(presets.Items, preset);
-            ShowStatus($"Going to \"{preset.Name}\".", false);
+            ShowStatus(Strings.GoingToPreset(preset.Name), false);
         }
     }
 
@@ -66,7 +67,7 @@ public sealed partial class MainPresenter
         var preset = presets.At(index);
         if (preset is null)
         {
-            ShowStatus($"No preset #{index + 1}.", true);
+            ShowStatus(Strings.NoPresetNumber(index + 1), true);
             return;
         }
 
@@ -75,20 +76,20 @@ public sealed partial class MainPresenter
 
     private void OverwritePreset(Preset preset)
     {
-        if (!view.Confirm($"Replace \"{preset.Name}\" with the current camera position?"))
+        if (!view.Confirm(Strings.ReplacePreset(preset.Name)))
         {
             return;
         }
 
         if (WithCamera(ptz => ptz.StorePreset(preset)))
         {
-            SavePresets(preset, $"Updated preset \"{preset.Name}\".");
+            SavePresets(preset, Strings.UpdatedPreset(preset.Name));
         }
     }
 
     private void RenamePreset(Preset preset)
     {
-        var name = view.PromptText("Rename preset", "New name:", preset.Name);
+        var name = view.PromptText(Strings.RenamePresetTitle, Strings.RenamePresetPrompt, preset.Name);
         if (name is null)
         {
             return;
@@ -104,12 +105,12 @@ public sealed partial class MainPresenter
             return;
         }
 
-        SavePresets(preset, $"Renamed preset to \"{preset.Name}\".");
+        SavePresets(preset, Strings.RenamedPreset(preset.Name));
     }
 
     private void DeletePreset(Preset preset)
     {
-        if (!view.Confirm($"Delete preset \"{preset.Name}\"?"))
+        if (!view.Confirm(Strings.DeletePreset(preset.Name)))
         {
             return;
         }
@@ -120,7 +121,7 @@ public sealed partial class MainPresenter
         }
 
         presets.Remove(preset);
-        SavePresets(null, $"Deleted preset \"{preset.Name}\".");
+        SavePresets(null, Strings.DeletedPreset(preset.Name));
     }
 
     private void MovePreset(Preset preset, int offset)
@@ -138,7 +139,7 @@ public sealed partial class MainPresenter
         }
         catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is InvalidOperationException)
         {
-            ShowStatus("Could not save presets: " + ex.Message, true, ex);
+            ShowStatus(Strings.CouldNotSavePresets(ex.Message), true, ex);
             return;
         }
 

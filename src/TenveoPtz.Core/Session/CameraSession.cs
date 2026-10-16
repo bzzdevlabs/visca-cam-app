@@ -1,4 +1,5 @@
 using System;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Ptz;
 using TenveoPtz.Core.Video;
 
@@ -20,7 +21,7 @@ public sealed class CameraSession : IDisposable
     public IPtzController Ptz { get; }
 
     public string Description =>
-        Video is null ? $"{Ptz.Description}, no video" : $"{Video.Device.Name}, {Ptz.Description}";
+        Video is null ? Strings.NoVideo(Ptz.Description) : $"{Video.Device.Name}, {Ptz.Description}";
 
     public void Dispose()
     {

@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using TenveoPtz.App.Views.Controls;
 using TenveoPtz.App.Views.Theming;
+using TenveoPtz.Core.Localization;
 
 namespace TenveoPtz.App.Views;
 
@@ -65,13 +66,13 @@ internal sealed class FluentDialog : Form
     /// <summary>Asks for one line of text; returns <c>null</c> when cancelled.</summary>
     public static string? Prompt(IWin32Window owner, string title, string message, string initialValue)
     {
-        using var dialog = new FluentDialog(title, message, "Save", "Cancel", initialValue);
+        using var dialog = new FluentDialog(title, message, Strings.Save, Strings.Cancel, initialValue);
         return dialog.ShowDialog(owner) == DialogResult.OK ? dialog.input!.Value : null;
     }
 
-    public static bool Confirm(IWin32Window owner, string title, string message, string primaryText, string cancelText = "Cancel")
+    public static bool Confirm(IWin32Window owner, string title, string message, string primaryText, string? cancelText = null)
     {
-        using var dialog = new FluentDialog(title, message, primaryText, cancelText, null);
+        using var dialog = new FluentDialog(title, message, primaryText, cancelText ?? Strings.Cancel, null);
         return dialog.ShowDialog(owner) == DialogResult.OK;
     }
 

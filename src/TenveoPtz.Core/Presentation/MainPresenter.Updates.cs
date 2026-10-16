@@ -1,4 +1,5 @@
 using System;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Updates;
 
 namespace TenveoPtz.Core.Presentation;
@@ -32,19 +33,19 @@ public sealed partial class MainPresenter
 
         log.Info(release is null ? "No newer release." : $"Version {release.Version} is available.");
         if (release is null || closing
-            || !view.ConfirmUpdate($"Version {release.Version} of Tenveo PTZ is available (you have {currentVersion}). Download and install it now? The app restarts when it is done."))
+            || !view.ConfirmUpdate(Strings.UpdateAvailableMessage(release.Version, currentVersion)))
         {
             return;
         }
 
-        ShowStatus($"Downloading version {release.Version}...", false);
+        ShowStatus(Strings.DownloadingVersion(release.Version), false);
         try
         {
             await updates.InstallAsync(release);
         }
         catch (Exception ex)
         {
-            ShowStatus($"Update failed: {ex.Message} You can download it from {release.PageUrl}", true, ex);
+            ShowStatus(Strings.UpdateFailed(ex.Message, release.PageUrl), true, ex);
             return;
         }
 
