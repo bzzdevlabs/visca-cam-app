@@ -194,6 +194,20 @@ try {
         Assert-Same $second (Invoke-AndSettle { Press-Key 0x32 } "key 2 (preset 2)") "preset 2"
     }
 
+    # Settings panel: opens from the gear button, closes with Escape.
+    Focus-App
+    Click-Button "Settings"
+    $isPanel = New-Object System.Windows.Automation.AndCondition @(
+        (New-Object System.Windows.Automation.PropertyCondition $automation::NameProperty, "Settings"),
+        (New-Object System.Windows.Automation.PropertyCondition $automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window),
+        (New-Object System.Windows.Automation.PropertyCondition $automation::ProcessIdProperty, $process.Id))
+    $panel = Wait-For { $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $isPanel) } "the settings panel"
+    Start-Sleep -Milliseconds 500
+    Save-WindowImage ([IntPtr]$panel.Current.NativeWindowHandle) "screenshot-settings"
+    Press-Key 0x1B # Escape.
+    Wait-For { -not $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $isPanel) } "the settings panel to close" | Out-Null
+    Assert-That $true "the settings panel opens from the gear button and closes with Escape"
+
     # Numeric keypad while another application is in front (Num Lock off: keypad 4 = Left).
     if ([Win32.Input]::GetKeyState($VK_NUMLOCK) -band 1) { Press-Key $VK_NUMLOCK }
     $notepad = Start-Process notepad -PassThru

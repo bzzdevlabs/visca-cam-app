@@ -18,6 +18,7 @@ internal static class Glyphs
     public const string Refresh = "\uE72C";
     public const string Pin = "\uE718";
     public const string Pinned = "\uE840";
+    public const string Settings = "\uE713";
     public const string Camera = "\uE722";
     public const string Video = "\uE714";
     public const string Connect = "\uE71B";

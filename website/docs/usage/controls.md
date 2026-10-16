@@ -32,7 +32,7 @@ camera after you click the speed slider or the preset list; only text fields tak
 
 ## Numeric keypad while another app is in front (Windows)
 
-Turn on **Numpad in background** (under the speed slider) to keep controlling the camera from the
+Turn on **Numeric keypad works while another app is in front** in [Settings](./settings.md) to keep controlling the camera from the
 numeric keypad while Zoom, Teams or any other application is in front:
 
 | Keypad | Num Lock off | Num Lock on |
@@ -50,5 +50,5 @@ affected. The setting is remembered.
 
 ## Ceiling-mounted cameras
 
-To reverse the controls of a camera mounted upside down, set `InvertPan` and/or `InvertTilt`
-in the [settings file](./settings.md).
+To reverse the controls of a camera mounted upside down, turn on **Reverse left and right**
+and/or **Reverse up and down** in [Settings](./settings.md).

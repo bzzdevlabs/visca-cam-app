@@ -33,6 +33,8 @@ internal sealed partial class MainForm : Form, IMainView
 
     public event EventHandler? ConnectRequested;
 
+    public event EventHandler? SettingsRequested;
+
     public event EventHandler? DisconnectRequested;
 
     public event EventHandler<PanTiltEventArgs>? PanTiltRequested;
@@ -87,8 +89,34 @@ internal sealed partial class MainForm : Form, IMainView
 
     public bool BackgroundNumpad
     {
-        get => movePanel.BackgroundNumpad;
-        set => movePanel.BackgroundNumpad = value;
+        get => backgroundNumpad;
+        set
+        {
+            backgroundNumpad = value;
+            UpdateNumpadHook();
+        }
+    }
+
+    /// <summary>Theme chosen on the command line (screenshots): the settings do not override it.</summary>
+    public bool ThemeFixedByCommandLine { get; set; }
+
+    /// <summary>Explicit: a member named Theme would hide the <see cref="Theming.Theme"/> class in this form.</summary>
+    AppTheme IMainView.Theme
+    {
+        get => theme;
+        set
+        {
+            theme = value;
+            if (!ThemeFixedByCommandLine)
+            {
+                Theming.Theme.Initialize(value switch
+                {
+                    AppTheme.Light => ThemeMode.Light,
+                    AppTheme.Dark => ThemeMode.Dark,
+                    _ => ThemeMode.System,
+                });
+            }
+        }
     }
 
     public bool AlwaysOnTop
@@ -121,6 +149,8 @@ internal sealed partial class MainForm : Form, IMainView
     public string? PromptText(string title, string prompt, string initialValue) => FluentDialog.Prompt(this, title, prompt, initialValue);
 
     public bool Confirm(string message) => FluentDialog.Confirm(this, "Are you sure?", message, "Yes");
+
+    public SettingsEdit? EditSettings(AppSettings settings) => SettingsDialog.Show(this, settings, debugTools.DataFolder);
 
     public bool ConfirmUpdate(string message) => FluentDialog.Confirm(this, "Update available", message, "Update", "Not now");
 
@@ -189,7 +219,7 @@ internal sealed partial class MainForm : Form, IMainView
         movePanel.HomeRequested += (_, e) => HomeRequested?.Invoke(this, e);
         movePanel.SpeedChanged += (_, e) => SpeedChanged?.Invoke(this, e);
         movePanel.PreciseChanged += (_, e) => PreciseModeChanged?.Invoke(this, e);
-        movePanel.BackgroundNumpadChanged += (_, _) => UpdateNumpadHook();
+        connectionBar.SettingsRequested += (_, e) => SettingsRequested?.Invoke(this, e);
         connectionBar.PreviewChanged += (_, e) => PreviewChanged?.Invoke(this, e);
         lensPanel.ZoomRequested += (_, e) => ZoomRequested?.Invoke(this, e);
         lensPanel.FocusRequested += (_, e) => FocusRequested?.Invoke(this, e);

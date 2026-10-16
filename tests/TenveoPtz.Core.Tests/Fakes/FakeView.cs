@@ -23,6 +23,8 @@ internal sealed class FakeView : IMainView
 
     public event EventHandler? DisconnectRequested;
 
+    public event EventHandler? SettingsRequested;
+
     public event EventHandler<PanTiltEventArgs>? PanTiltRequested;
 
     public event EventHandler<MotionEventArgs>? ZoomRequested;
@@ -65,6 +67,14 @@ internal sealed class FakeView : IMainView
 
     public bool BackgroundNumpad { get; set; }
 
+    public AppTheme Theme { get; set; }
+
+    /// <summary>What the settings panel returns: change the copy it gets, or ask for a reset.</summary>
+    public Func<AppSettings, SettingsEdit?> SettingsAnswer { get; set; } = _ => null;
+
+    /// <summary>Settings shown in the last settings panel.</summary>
+    public AppSettings? SettingsShown { get; private set; }
+
     public bool Connected { get; private set; }
 
     public IReadOnlyList<Preset> Presets { get; private set; } = Array.Empty<Preset>();
@@ -104,6 +114,14 @@ internal sealed class FakeView : IMainView
     public string? PromptText(string title, string prompt, string initialValue) => PromptAnswer;
 
     public bool Confirm(string message) => ConfirmAnswer;
+
+    public SettingsEdit? EditSettings(AppSettings settings)
+    {
+        SettingsShown = settings;
+        return SettingsAnswer(settings);
+    }
+
+    public void OpenSettings() => SettingsRequested?.Invoke(this, EventArgs.Empty);
 
     public bool ConfirmUpdate(string message)
     {

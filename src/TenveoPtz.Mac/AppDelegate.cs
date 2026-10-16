@@ -89,7 +89,7 @@ internal sealed class AppDelegate : NSApplicationDelegate
             NSFileManager.DefaultManager.GetUrls(NSSearchPathDirectory.ApplicationSupportDirectory, NSSearchPathDomain.User)[0].Path!,
             DataFolderName);
 
-        window = new MainWindow();
+        window = new MainWindow { ThemeFixedByCommandLine = FindOption("--theme=") is not null };
         var videoService = new AVFoundationVideoService(window.VideoView);
         var serialPorts = new SerialPortProvider();
         presenter = new MainPresenter(

@@ -53,7 +53,8 @@ internal static class Program
         installer.DeleteLeftovers();
 
         var debugTools = new DebugTools(logHub, dataFolder, logFolder);
-        if (Run(installer, ParseVersion(args), debugTools, debug, ParseSimulator(args)))
+        var themeFixed = FindOption(args, "--theme=") is not null;
+        if (Run(installer, ParseVersion(args), debugTools, debug, ParseSimulator(args), themeFixed))
         {
             // Started once the window is closed and the camera released, so the new instance can open it.
                 log.Info("Restarting after the update.");
@@ -65,12 +66,13 @@ internal static class Program
 
     /// <summary>Shows the main window until it closes; returns whether an update asked for a restart.</summary>
     /// <param name="simulator">Quirks of the "PTZ Simulator" camera to offer, or <c>null</c> for no simulator.</param>
-    private static bool Run(UpdateInstaller installer, Version version, DebugTools debugTools, bool showDebugConsole, SimulatedCameraQuirks? simulator)
+    /// <param name="themeFixed">The theme was given on the command line: the saved theme does not replace it.</param>
+    private static bool Run(UpdateInstaller installer, Version version, DebugTools debugTools, bool showDebugConsole, SimulatedCameraQuirks? simulator, bool themeFixed)
     {
         var dataFolder = debugTools.DataFolder;
 
         using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
-        using var form = new MainForm(debugTools) { ShowDebugConsoleOnStart = showDebugConsole };
+        using var form = new MainForm(debugTools) { ShowDebugConsoleOnStart = showDebugConsole, ThemeFixedByCommandLine = themeFixed };
         var tickers = new WinFormsTickerFactory();
         IVideoService videoService = new DirectShowVideoService(form.VideoHost);
         if (simulator is { } quirks)

@@ -28,6 +28,9 @@ public interface IMainView
 
     event EventHandler? DisconnectRequested;
 
+    /// <summary>The user opened the settings panel.</summary>
+    event EventHandler? SettingsRequested;
+
     /// <summary>Pan/tilt intent changed. Both axes <see cref="Ptz.Motion.None"/> means stop.</summary>
     event EventHandler<PanTiltEventArgs>? PanTiltRequested;
 
@@ -78,6 +81,8 @@ public interface IMainView
     /// <summary>The numeric keypad controls the camera even while another application is in front.</summary>
     bool BackgroundNumpad { get; set; }
 
+    AppTheme Theme { get; set; }
+
     void ShowVideoDevices(IReadOnlyList<VideoDevice> devices);
 
     void ShowSerialPorts(IReadOnlyList<string> portNames);
@@ -92,6 +97,9 @@ public interface IMainView
     string? PromptText(string title, string prompt, string initialValue);
 
     bool Confirm(string message);
+
+    /// <summary>Shows the settings panel on a copy of the settings; returns <c>null</c> when cancelled.</summary>
+    SettingsEdit? EditSettings(AppSettings settings);
 
     /// <summary>Asks whether to install an available update.</summary>
     bool ConfirmUpdate(string message);

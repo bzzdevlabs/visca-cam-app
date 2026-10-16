@@ -18,7 +18,7 @@ Without internet access the check is silently skipped. If the app's folder is no
 status line says so: download the new version by hand instead. On macOS the app must have been
 moved out of the disk image (to **Applications**) to update itself.
 
-Set `CheckForUpdates` to `false` in the [settings file](./settings.md) to turn off the check.
+Turn off **Look for a new version on start-up** in [Settings](./settings.md) to skip the check.
 
 :::note
 

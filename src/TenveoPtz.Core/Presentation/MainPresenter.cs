@@ -66,6 +66,7 @@ public sealed partial class MainPresenter : IDisposable
         view.ConnectRequested += (_, _) => Connect();
         view.DisconnectRequested += (_, _) => Disconnect();
         view.PreviewChanged += (_, _) => ChangePreview();
+        view.SettingsRequested += (_, _) => EditSettings();
         SubscribeCameraEvents();
         SubscribePresetEvents();
     }
@@ -82,6 +83,7 @@ public sealed partial class MainPresenter : IDisposable
 
         view.AlwaysOnTop = settings.AlwaysOnTop;
         view.BackgroundNumpad = settings.BackgroundNumpad;
+        view.Theme = settings.Theme;
         view.Speed = settings.Speed;
         RefreshDevices();
         view.ConnectionOptions = settings.Connection.Clone();
@@ -101,10 +103,7 @@ public sealed partial class MainPresenter : IDisposable
     private void Shutdown()
     {
         closing = true;
-        settings.Connection = view.ConnectionOptions.Clone();
-        settings.Speed = view.Speed;
-        settings.AlwaysOnTop = view.AlwaysOnTop;
-        settings.BackgroundNumpad = view.BackgroundNumpad;
+        ReadViewState();
         settings.AutoConnect = IsConnected;
         TrySave(() => settingsStore.Save(settings));
         CloseSession();

@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using TenveoPtz.App.Infrastructure.Input;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Ptz;
+using TenveoPtz.Core.Settings;
 
 namespace TenveoPtz.App.Views;
 
@@ -26,6 +27,8 @@ internal sealed partial class MainForm
     private bool shiftHeld;
     private NumpadHook? numpadHook;
     private bool isConnected;
+    private bool backgroundNumpad;
+    private AppTheme theme;
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
