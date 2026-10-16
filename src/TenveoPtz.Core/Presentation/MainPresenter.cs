@@ -142,6 +142,7 @@ public sealed partial class MainPresenter : IDisposable
     {
         CloseSession();
         var options = view.ConnectionOptions.Clone();
+        options.UvcContinuousMoves = settings.UvcContinuousMoves;
         log.Info($"Connecting: mode {options.Mode}, video \"{options.VideoDeviceName}\" (preview {(options.ShowPreview ? "on" : "off")}), port {options.PortName}, {options.BaudRate} baud, address {options.Address}.");
         try
         {

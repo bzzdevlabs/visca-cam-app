@@ -7,10 +7,12 @@ using TenveoPtz.Core.Presets;
 namespace TenveoPtz.Core.Ptz;
 
 /// <summary>
-/// PTZ strategy using the UVC camera controls exposed by the USB video driver. Pan, tilt and zoom
-/// use the camera's own continuous (relative) motion when it offers it, which is smooth at any
-/// speed. Otherwise moves are emulated by stepping the absolute position on every tick, which
-/// can only move by whole units of the axis (often one degree).
+/// PTZ strategy using the UVC camera controls exposed by the USB video driver. Moves are made by
+/// stepping the absolute position on every tick. Optionally, pan, tilt and zoom use the camera's
+/// own continuous (relative) motion instead; it is off by default because some cameras report it
+/// without honouring it, which leaves the controls dead.
+/// Presets store the position the controller last commanded rather than the one the camera
+/// reports: a camera still travelling to its target reports a position it is about to leave.
 /// Must be used from the thread that owns the camera (the UI thread).
 /// </summary>
 public sealed class UvcPtzController : IPtzController
@@ -33,13 +35,22 @@ public sealed class UvcPtzController : IPtzController
     private readonly Dictionary<CameraAxis, AxisRange?> speedRanges = new();
     private readonly HashSet<CameraAxis> continuous = new();
 
+    /// <summary>Last absolute position sent to each axis; absent when unknown (e.g. after a continuous move).</summary>
+    private readonly Dictionary<CameraAxis, int> targets = new();
+    private readonly bool useContinuousMoves;
+
     /// <param name="ticker">Ticker driving continuous moves. Ownership is transferred to the controller.</param>
-    public UvcPtzController(ICameraAxes axes, ITicker ticker)
+    /// <param name="useContinuousMoves">Use the camera's continuous (relative) motion when it offers it.</param>
+    public UvcPtzController(ICameraAxes axes, ITicker ticker, bool useContinuousMoves = false)
     {
         this.axes = axes ?? throw new ArgumentNullException(nameof(axes));
         this.ticker = ticker ?? throw new ArgumentNullException(nameof(ticker));
+        this.useContinuousMoves = useContinuousMoves;
         this.ticker.Tick += OnTick;
     }
+
+    /// <summary>Whether <paramref name="axis"/> moves with the camera's continuous motion (otherwise by absolute steps).</summary>
+    public bool MovesContinuously(CameraAxis axis) => SpeedRangeOf(axis) is not null;
 
     public event EventHandler<ErrorEventArgs>? Faulted;
 
@@ -71,9 +82,9 @@ public sealed class UvcPtzController : IPtzController
     public void StorePreset(Preset preset)
     {
         RequirePreset(preset).Position = new PtzPosition(
-            axes.GetValue(CameraAxis.Pan),
-            axes.GetValue(CameraAxis.Tilt),
-            axes.GetValue(CameraAxis.Zoom));
+            PositionOf(CameraAxis.Pan),
+            PositionOf(CameraAxis.Tilt),
+            PositionOf(CameraAxis.Zoom));
     }
 
     public void RecallPreset(Preset preset)
@@ -106,11 +117,18 @@ public sealed class UvcPtzController : IPtzController
     /// Distance travelled per tick. It may be a fraction of the axis resolution: the position is
     /// accumulated between ticks, so slow speeds move one unit every few ticks instead of rounding up.
     /// </summary>
-    private static double StepFor(AxisRange range, double speed)
+    private double StepFor(CameraAxis axis, AxisRange range, double speed)
     {
         var factor = MinimumSpeedFactor + ((1 - MinimumSpeedFactor) * SpeedScale.Ease(speed));
-        return range.Span * FullSpeedStepFraction * factor;
+        return SpanFor(axis, range) * FullSpeedStepFraction * factor;
     }
+
+    /// <summary>
+    /// Span the speed is a fraction of. Tilt uses the pan span: both are angles in the same unit,
+    /// and tilt's much smaller range would otherwise make it crawl next to pan.
+    /// </summary>
+    private int SpanFor(CameraAxis axis, AxisRange range) =>
+        axis == CameraAxis.Tilt && axes.GetRange(CameraAxis.Pan) is { } pan ? Math.Max(range.Span, pan.Span) : range.Span;
 
     private AxisRange RequireRange(CameraAxis axis) =>
         axes.GetRange(axis) ?? throw new NotSupportedException($"This camera does not expose {axis.ToString().ToLowerInvariant()} control over USB.");
@@ -130,13 +148,13 @@ public sealed class UvcPtzController : IPtzController
         else if (motions.TryGetValue(axis, out var motion) && motion.Direction == direction)
         {
             // Speed change while moving: keep going from where we are, just at the new pace.
-            motion.Step = StepFor(motion.Range, speed);
+            motion.Step = StepFor(axis, motion.Range, speed);
         }
         else
         {
             var range = RequireRange(axis);
-            var current = axes.GetValue(axis) ?? range.Default;
-            motions[axis] = new AxisMotion(range, direction, StepFor(range, speed), current);
+            var current = PositionOf(axis) ?? range.Default;
+            motions[axis] = new AxisMotion(range, direction, StepFor(axis, range, speed), current);
             Advance(axis, motions[axis]);
         }
 
@@ -158,12 +176,15 @@ public sealed class UvcPtzController : IPtzController
         var fastest = Math.Max(speedRange.Min, (int)Math.Ceiling(speedRange.Max * ContinuousSpeedShare));
         axes.SetSpeed(axis, (int)direction * SpeedScale.ToRange(speed, speedRange.Min, fastest));
         continuous.Add(axis);
+
+        // Where the camera stops is only known by reading it back.
+        targets.Remove(axis);
     }
 
     /// <summary>Continuous speed range of pan, tilt and zoom, read once; <c>null</c> when only absolute moves work.</summary>
     private AxisRange? SpeedRangeOf(CameraAxis axis)
     {
-        if (axis == CameraAxis.Focus)
+        if (!useContinuousMoves || axis == CameraAxis.Focus)
         {
             return null;
         }
@@ -182,9 +203,18 @@ public sealed class UvcPtzController : IPtzController
         var range = axes.GetRange(axis);
         if (range is not null && value.HasValue)
         {
-            axes.SetValue(axis, range.Clamp(value.Value));
+            SetPosition(axis, range.Clamp(value.Value));
         }
     }
+
+    private void SetPosition(CameraAxis axis, int value)
+    {
+        axes.SetValue(axis, value);
+        targets[axis] = value;
+    }
+
+    /// <summary>Where the axis is going: the last position commanded, else the one the camera reports.</summary>
+    private int? PositionOf(CameraAxis axis) => targets.TryGetValue(axis, out var target) ? target : axes.GetValue(axis);
 
     private void StopAll()
     {
@@ -234,7 +264,7 @@ public sealed class UvcPtzController : IPtzController
         var value = range.Clamp(range.Min + ((int)Math.Round((motion.Position - range.Min) / range.Step) * range.Step));
         if (value != motion.Written)
         {
-            axes.SetValue(axis, value);
+            SetPosition(axis, value);
             motion.Written = value;
         }
     }

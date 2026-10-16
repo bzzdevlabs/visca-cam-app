@@ -16,6 +16,12 @@ public sealed class AppSettings
     /// <summary>The numeric keypad controls the camera even while another application is in front (Windows).</summary>
     public bool BackgroundNumpad { get; set; }
 
+    /// <summary>
+    /// UVC: move with the camera's continuous (relative) controls instead of absolute steps.
+    /// Off by default: some cameras report these controls without honouring them.
+    /// </summary>
+    public bool UvcContinuousMoves { get; set; }
+
     /// <summary>Reverses pan, e.g. for a ceiling-mounted camera.</summary>
     public bool InvertPan { get; set; }
 

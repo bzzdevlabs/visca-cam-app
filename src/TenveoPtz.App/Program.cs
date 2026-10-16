@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Windows.Forms;
 using TenveoPtz.App.Infrastructure.DirectShow;
 using TenveoPtz.App.Infrastructure.Serial;
+using TenveoPtz.App.Infrastructure.Simulation;
 using TenveoPtz.App.Infrastructure.Timing;
 using TenveoPtz.App.Views;
 using TenveoPtz.App.Views.Theming;
@@ -14,8 +15,10 @@ using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Session;
 using TenveoPtz.Core.Settings;
+using TenveoPtz.Core.Simulation;
 using TenveoPtz.Core.Storage;
 using TenveoPtz.Core.Updates;
+using TenveoPtz.Core.Video;
 
 namespace TenveoPtz.App;
 
@@ -50,7 +53,7 @@ internal static class Program
         installer.DeleteLeftovers();
 
         var debugTools = new DebugTools(logHub, dataFolder, logFolder);
-        if (Run(installer, ParseVersion(args), debugTools, debug))
+        if (Run(installer, ParseVersion(args), debugTools, debug, ParseSimulator(args)))
         {
             // Started once the window is closed and the camera released, so the new instance can open it.
                 log.Info("Restarting after the update.");
@@ -61,19 +64,26 @@ internal static class Program
     }
 
     /// <summary>Shows the main window until it closes; returns whether an update asked for a restart.</summary>
-    private static bool Run(UpdateInstaller installer, Version version, DebugTools debugTools, bool showDebugConsole)
+    /// <param name="simulator">Quirks of the "PTZ Simulator" camera to offer, or <c>null</c> for no simulator.</param>
+    private static bool Run(UpdateInstaller installer, Version version, DebugTools debugTools, bool showDebugConsole, SimulatedCameraQuirks? simulator)
     {
         var dataFolder = debugTools.DataFolder;
 
         using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
         using var form = new MainForm(debugTools) { ShowDebugConsoleOnStart = showDebugConsole };
-        var videoService = new DirectShowVideoService(form.VideoHost);
+        var tickers = new WinFormsTickerFactory();
+        IVideoService videoService = new DirectShowVideoService(form.VideoHost);
+        if (simulator is { } quirks)
+        {
+            videoService = new SimulatorVideoService(videoService, form.VideoHost, tickers, quirks, log.For("Simulator"));
+        }
+
         var serialPorts = new SerialPortProvider();
         using var presenter = new MainPresenter(
             form,
             videoService,
             serialPorts,
-            new CameraSessionFactory(videoService, serialPorts, new WinFormsTickerFactory(), log.For("Session")),
+            new CameraSessionFactory(videoService, serialPorts, tickers, log.For("Session")),
             new XmlFileStore<AppSettings>(Path.Combine(dataFolder, "settings.xml"), log.For("Storage")),
             new XmlFileStore<PresetBook>(Path.Combine(dataFolder, "presets.xml"), log.For("Storage")),
             new GitHubUpdateService(http, Repository, version, installer),
@@ -99,6 +109,24 @@ internal static class Program
     {
         var value = FindOption(args, "--simulate-version=");
         return value is not null && Version.TryParse(value, out var version) ? version : typeof(Program).Assembly.GetName().Version;
+    }
+
+    /// <summary>
+    /// <c>--simulator</c> adds a simulated PTZ camera to the device list, to try the app without
+    /// hardware; <c>--simulator=LaggingReadback,ReadbackIsLastTarget,IgnoresContinuousMoves</c>
+    /// gives it the quirks of some real cameras.
+    /// </summary>
+    private static SimulatedCameraQuirks? ParseSimulator(string[] args)
+    {
+        if (args.Any(arg => string.Equals(arg, "--simulator", StringComparison.OrdinalIgnoreCase)))
+        {
+            return SimulatedCameraQuirks.None;
+        }
+
+        var value = FindOption(args, "--simulator=");
+        return value is null ? null
+            : Enum.TryParse<SimulatedCameraQuirks>(value, ignoreCase: true, out var quirks) ? quirks
+            : SimulatedCameraQuirks.None;
     }
 
     private static string? FindOption(string[] args, string prefix)

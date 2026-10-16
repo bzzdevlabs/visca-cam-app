@@ -18,6 +18,19 @@ dotnet test --configuration Release
 
 The Windows app is written to `src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe`.
 
+## Simulated camera
+
+Start the app with `--simulator` to add a **PTZ Simulator** camera to the list: a software PTZ
+camera with a live picture (a panorama with a degree grid and lettered landmarks), motors that
+take time to move, and continuous moves for `UvcContinuousMoves`. It logs
+`Simulator at pan P, tilt T, zoom Z.` each time it stops. Give it the quirks of some real cameras
+with `--simulator=LaggingReadback,ReadbackIsLastTarget,IgnoresContinuousMoves`.
+
+The same simulator drives the end-to-end scenario tests (`tests/TenveoPtz.Core.Tests/Scenarios`)
+on a virtual clock, and `build/simulator-test.ps1` runs the real app on it in CI: held arrow and
+zoom keys, presets saved with the **New** button and recalled with the number keys, and the
+numeric keypad while Notepad is in front.
+
 ## Windows installer
 
 The installer builds on Windows only (WiX Toolset 5, restored automatically), from the app built
