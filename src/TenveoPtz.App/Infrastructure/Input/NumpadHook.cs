@@ -21,7 +21,6 @@ internal sealed class NumpadHook : IDisposable
     private const int WmSysKeyDown = 0x0104;
     private const int WmSysKeyUp = 0x0105;
     private const int FlagExtended = 0x01;
-    private const int FlagInjected = 0x10;
 
     private readonly Func<Keys, bool> keyDown;
     private readonly Func<Keys, bool> keyUp;
@@ -72,7 +71,8 @@ internal sealed class NumpadHook : IDisposable
         if (code >= 0)
         {
             var info = Marshal.PtrToStructure<KeyboardInfo>(data);
-            var key = (info.Flags & FlagInjected) == 0 ? KeypadKey(info.VirtualKey, info.Flags) : Keys.None;
+            // Injected keys count too: macro pads and remapping tools (Stream Deck, AutoHotkey) send them.
+            var key = KeypadKey(info.VirtualKey, info.Flags);
             if (key != Keys.None)
             {
                 var swallow = (int)message switch
