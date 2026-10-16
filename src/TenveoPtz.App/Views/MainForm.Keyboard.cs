@@ -13,7 +13,8 @@ namespace TenveoPtz.App.Views;
 /// Home recentres, 1..9 recall presets (all ignored while a text field has focus, so the camera
 /// keys keep working after clicking the speed slider or the preset list). Key auto-repeat is ignored:
 /// holding a key sends one move on press and one stop on release, so the motion stays continuous.
-/// Holding Shift switches to precise (slow) moves. Ctrl+Shift+D toggles the hidden debug console.
+/// Holding Shift switches to precise (slow) moves. Ctrl+, opens the settings. Ctrl+Shift+D toggles
+/// the hidden debug console.
 /// With "Numpad in background" on, the numeric keypad keys do the same while another application
 /// (Zoom, Teams...) is in front.
 /// </summary>
@@ -35,6 +36,12 @@ internal sealed partial class MainForm
         if (keyData == DebugConsoleKeys)
         {
             ToggleDebugConsole();
+            return true;
+        }
+
+        if (keyData == (Keys.Control | Keys.Oemcomma))
+        {
+            SettingsRequested?.Invoke(this, EventArgs.Empty);
             return true;
         }
 

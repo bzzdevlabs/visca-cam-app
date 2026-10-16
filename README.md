@@ -72,7 +72,7 @@ releases: download the `.exe` or `.msi` once by hand.
 
 ### Settings
 
-The gear button in the top bar (Windows) or **Settings...** (Cmd+,, macOS) opens the settings:
+The gear button in the top bar or Ctrl+, (Windows), or **Settings...** (Cmd+,, macOS) opens the settings:
 reversed directions for a ceiling-mounted camera, continuous USB moves, the numeric keypad while
 another app is in front, window on top, theme, the update check, and a reset of every setting
 (presets are kept). They are stored with the presets in `%APPDATA%\TenveoPTZ\` on Windows and in

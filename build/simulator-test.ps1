@@ -196,9 +196,11 @@ try {
         Assert-Same $second (Invoke-AndSettle { Press-Key 0x32 } "key 2 (preset 2)") "preset 2"
     }
 
-    # Settings panel: opens from the gear button, closes with Escape.
+    # Settings panel: opens with Ctrl+, (like the gear button), closes with Escape.
     Focus-App
-    Click-Button "SettingsButton" -AutomationId
+    [Win32.Input]::keybd_event(0x11, 0, 0, [UIntPtr]::Zero)               # Ctrl down.
+    Press-Key 0xBC                                                       # Comma.
+    [Win32.Input]::keybd_event(0x11, 0, $KEYEVENTF_KEYUP, [UIntPtr]::Zero) # Ctrl up.
     $isPanel = New-Object System.Windows.Automation.AndCondition @(
         (New-Object System.Windows.Automation.PropertyCondition $automation::NameProperty, "Settings"),
         (New-Object System.Windows.Automation.PropertyCondition $automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window),
@@ -208,7 +210,7 @@ try {
     Save-WindowImage ([IntPtr]$panel.Current.NativeWindowHandle) "screenshot-settings"
     Press-Key 0x1B # Escape.
     Wait-For { -not $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $isPanel) } "the settings panel to close" | Out-Null
-    Assert-That $true "the settings panel opens from the gear button and closes with Escape"
+    Assert-That $true "the settings panel opens with Ctrl+, and closes with Escape"
 
     # Numeric keypad while another application is in front (Num Lock off: keypad 4 = Left).
     if ([Win32.Input]::GetKeyState($VK_NUMLOCK) -band 1) { Press-Key $VK_NUMLOCK }

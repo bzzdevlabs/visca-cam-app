@@ -5,8 +5,8 @@ title: Settings
 
 # Settings
 
-Open **Settings** with the gear button in the top bar (Windows) or **Tenveo PTZ > Settings...**
-(Cmd+,) on macOS. Changes apply when you select **Save**.
+Open **Settings** with the gear button in the top bar or Ctrl+, (Windows), or with
+**Tenveo PTZ > Settings...** (Cmd+,) on macOS. Changes apply when you select **Save**.
 
 | Section | Setting | Effect |
 | --- | --- | --- |

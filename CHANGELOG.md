@@ -9,7 +9,7 @@ the build number. Each version's section is also the text of its
 
 ### Added
 
-- **Settings panel**, opened with the gear button in the top bar (Windows) or
+- **Settings panel**, opened with the gear button in the top bar or Ctrl+, (Windows), or
   **Tenveo PTZ > Settings...** (Cmd+,, macOS):
   - reverse left and right, reverse up and down (ceiling-mounted cameras);
   - continuous USB moves (experimental, Windows);

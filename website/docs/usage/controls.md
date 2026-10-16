@@ -26,6 +26,7 @@ On Windows, make the window narrower to put the controls under the video.
 | `+` / `-` (main keyboard or numeric keypad) or Page Up / Page Down (hold; Fn + ↑ / ↓ on a Mac laptop) | Zoom in / out |
 | Home (Fn + ← on a Mac laptop) | Home position |
 | `1` … `9` | Go to preset 1 … 9 |
+| Ctrl+, (Cmd+, on a Mac) | [Settings](./settings.md) |
 
 Holding a key moves the camera continuously until you release it. The keys keep driving the
 camera after you click the speed slider or the preset list; only text fields take them.
