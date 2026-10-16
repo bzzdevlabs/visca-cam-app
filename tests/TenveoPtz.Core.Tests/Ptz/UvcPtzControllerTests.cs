@@ -105,6 +105,7 @@ public sealed class UvcPtzControllerTests
     {
         axes.SpeedRanges[CameraAxis.Pan] = new AxisRange(1, 24, 1, 1);
 
+        var controller = Continuous();
         controller.Move(Motion.Negative, Motion.None, 1.0);
 
         Assert.Equal(new[] { "Pan -12" }, axes.Speeds);
@@ -117,6 +118,7 @@ public sealed class UvcPtzControllerTests
     {
         axes.SpeedRanges[CameraAxis.Pan] = new AxisRange(1, 24, 1, 1);
 
+        var controller = Continuous();
         controller.Move(Motion.Positive, Motion.None, 0.0);
 
         Assert.Equal(new[] { "Pan 1" }, axes.Speeds);
@@ -126,6 +128,7 @@ public sealed class UvcPtzControllerTests
     public void Move_ContinuousStopSendsZeroOnce()
     {
         axes.SpeedRanges[CameraAxis.Tilt] = new AxisRange(1, 20, 1, 1);
+        var controller = Continuous();
         controller.Move(Motion.None, Motion.Positive, 0.5);
 
         controller.Move(Motion.None, Motion.None, 0.5);
@@ -139,11 +142,54 @@ public sealed class UvcPtzControllerTests
     public void Home_StopsContinuousMotion()
     {
         axes.SpeedRanges[CameraAxis.Pan] = new AxisRange(1, 24, 1, 1);
+        var controller = Continuous();
         controller.Move(Motion.Positive, Motion.None, 0.5);
 
         controller.Home();
 
         Assert.Equal("Pan 0", axes.Speeds[axes.Speeds.Count - 1]);
+    }
+
+    [Fact]
+    public void Move_IgnoresContinuousMotionUnlessEnabled()
+    {
+        axes.SpeedRanges[CameraAxis.Pan] = new AxisRange(1, 24, 1, 1);
+
+        controller.Move(Motion.Positive, Motion.None, 1.0);
+
+        Assert.Empty(axes.Speeds);
+        Assert.True(axes.Values[CameraAxis.Pan] > 0);
+    }
+
+    [Fact]
+    public void StorePreset_UsesTheCommandedPositionNotALaggingReadback()
+    {
+        var preset = new Preset { Name = "A", Slot = 1 };
+        controller.RecallPreset(new Preset { Name = "Target", Slot = 2, Position = new PtzPosition(100, 20, 300) });
+
+        // The camera is still on its way and reports where it is now.
+        axes.Values[CameraAxis.Pan] = 37;
+        controller.StorePreset(preset);
+
+        Assert.Equal(100, preset.Position?.Pan);
+        Assert.Equal(20, preset.Position?.Tilt);
+        Assert.Equal(300, preset.Position?.Zoom);
+    }
+
+    [Fact]
+    public void StorePreset_ReadsTheCameraAfterAContinuousMove()
+    {
+        var controller = Continuous();
+        axes.SpeedRanges[CameraAxis.Pan] = new AxisRange(1, 24, 1, 1);
+        controller.RecallPreset(new Preset { Name = "Target", Slot = 2, Position = new PtzPosition(100, 0, 0) });
+        controller.Move(Motion.Positive, Motion.None, 0.5);
+        controller.Move(Motion.None, Motion.None, 0.5);
+        axes.Values[CameraAxis.Pan] = 120;
+        var preset = new Preset { Name = "A", Slot = 1 };
+
+        controller.StorePreset(preset);
+
+        Assert.Equal(120, preset.Position?.Pan);
     }
 
     [Fact]
@@ -199,4 +245,6 @@ public sealed class UvcPtzControllerTests
 
         Assert.True(ticker.Disposed);
     }
+
+    private UvcPtzController Continuous() => new(axes, new ManualTicker(), useContinuousMoves: true);
 }

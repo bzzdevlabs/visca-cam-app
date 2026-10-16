@@ -45,7 +45,7 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
             // VISCA needs nothing from the video device, so without a preview it is left alone entirely.
             var needsVideo = options.ShowPreview || options.Mode == ControlMode.Uvc;
             video = needsVideo ? StartVideo(options.VideoDeviceName, options.ShowPreview) : null;
-            var ptz = options.Mode == ControlMode.Visca ? CreateVisca(options) : CreateUvc(video);
+            var ptz = options.Mode == ControlMode.Visca ? CreateVisca(options) : CreateUvc(video, options.UvcContinuousMoves);
             return new CameraSession(video, ptz);
         }
         catch
@@ -92,7 +92,7 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
         }
     }
 
-    private IPtzController CreateUvc(IVideoSession? video)
+    private IPtzController CreateUvc(IVideoSession? video, bool continuousMoves)
     {
         var axes = video?.Axes
             ?? throw new InvalidOperationException(
@@ -109,6 +109,12 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
                     + (speeds is null ? "absolute moves only." : $"continuous speeds {speeds.Min}..{speeds.Max}."));
         }
 
-        return new UvcPtzController(axes, tickers.Create(UvcTickInterval));
+        var controller = new UvcPtzController(axes, tickers.Create(UvcTickInterval), continuousMoves);
+        log.Info(continuousMoves
+            ? $"UVC moves: continuous where available (pan {Mode(CameraAxis.Pan)}, tilt {Mode(CameraAxis.Tilt)}, zoom {Mode(CameraAxis.Zoom)})."
+            : "UVC moves: absolute steps (continuous moves are off; UvcContinuousMoves in settings.xml turns them on).");
+        return controller;
+
+        string Mode(CameraAxis axis) => controller.MovesContinuously(axis) ? "continuous" : "steps";
     }
 }

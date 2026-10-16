@@ -22,5 +22,9 @@ public sealed class ConnectionOptions
     /// </summary>
     public bool ShowPreview { get; set; } = true;
 
+    /// <summary>Copied from <see cref="AppSettings.UvcContinuousMoves"/> when connecting; not saved here.</summary>
+    [System.Xml.Serialization.XmlIgnore]
+    public bool UvcContinuousMoves { get; set; }
+
     public ConnectionOptions Clone() => (ConnectionOptions)MemberwiseClone();
 }
