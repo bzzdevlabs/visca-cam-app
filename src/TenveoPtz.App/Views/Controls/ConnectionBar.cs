@@ -58,6 +58,11 @@ internal sealed class ConnectionBar : UserControl
             }
         };
         toolTips.SetToolTip(pin, "Keep this window on top of other windows");
+        var settingsButton = new FluentButton(string.Empty, Glyphs.Settings, ButtonAppearance.Subtle);
+        toolTips.SetToolTip(settingsButton, "Settings (Ctrl+,)");
+        settingsButton.AccessibleName = "Settings";
+        settingsButton.Name = "SettingsButton"; // UI Automation id, used by the CI test.
+        settingsButton.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
         toolTips.SetToolTip(connect, "Open the video and camera control");
 
         var refresh = new FluentButton(string.Empty, Glyphs.Refresh, ButtonAppearance.Subtle);
@@ -74,7 +79,7 @@ internal sealed class ConnectionBar : UserControl
         selection = Row(devices, mode, preview);
         modeRow = Row();
         modeRow.Margin = new Padding(0, 4, 0, 0);
-        actions = Row(refresh, pin, connect);
+        actions = Row(refresh, settingsButton, pin, connect);
         serialSettings = Row(ports, baudRates, addresses);
         serialSettings.Margin = new Padding(0, 4, 0, 0);
 
@@ -94,6 +99,8 @@ internal sealed class ConnectionBar : UserControl
     public event EventHandler? DisconnectRequested;
 
     public event EventHandler? AlwaysOnTopChanged;
+
+    public event EventHandler? SettingsRequested;
 
     /// <summary>The Preview switch was toggled by the user.</summary>
     public event EventHandler? PreviewChanged;

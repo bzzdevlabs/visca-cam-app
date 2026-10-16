@@ -19,6 +19,7 @@ namespace TenveoPtz.Mac.Views;
 internal sealed partial class MainWindow : NSWindow, IMainView
 {
     private bool closingRaised;
+    private AppTheme theme;
 
     public MainWindow()
         : base(new CoreGraphics.CGRect(0, 0, 1120, 740), NSWindowStyle.Titled | NSWindowStyle.Closable | NSWindowStyle.Miniaturizable | NSWindowStyle.Resizable, NSBackingStore.Buffered, false)
@@ -41,6 +42,8 @@ internal sealed partial class MainWindow : NSWindow, IMainView
     public event EventHandler? ConnectRequested;
 
     public event EventHandler? DisconnectRequested;
+
+    public event EventHandler? SettingsRequested;
 
     public event EventHandler<PanTiltEventArgs>? PanTiltRequested;
 
@@ -115,6 +118,27 @@ internal sealed partial class MainWindow : NSWindow, IMainView
     /// <summary>Kept for the settings file only: background keypad control is not available on macOS.</summary>
     public bool BackgroundNumpad { get; set; }
 
+    /// <summary>Theme chosen on the command line (screenshots): the settings do not override it.</summary>
+    public bool ThemeFixedByCommandLine { get; set; }
+
+    public AppTheme Theme
+    {
+        get => theme;
+        set
+        {
+            theme = value;
+            if (!ThemeFixedByCommandLine)
+            {
+                NSApplication.SharedApplication.Appearance = value switch
+                {
+                    AppTheme.Light => NSAppearance.GetAppearance(NSAppearance.NameAqua),
+                    AppTheme.Dark => NSAppearance.GetAppearance(NSAppearance.NameDarkAqua),
+                    _ => null,
+                };
+            }
+        }
+    }
+
     /// <summary>Precise (slow) moves while Shift is held.</summary>
     public bool PreciseMode => shiftHeld;
 
@@ -176,6 +200,12 @@ internal sealed partial class MainWindow : NSWindow, IMainView
     public string? PromptText(string title, string prompt, string initialValue) => Dialogs.Prompt(title, prompt, initialValue);
 
     public bool Confirm(string message) => Dialogs.Confirm("Are you sure?", message, "Yes");
+
+    public SettingsEdit? EditSettings(AppSettings settings) => Dialogs.EditSettings(settings);
+
+    /// <summary>Settings... menu item (Cmd+,), reached through the responder chain.</summary>
+    [Export("showSettings:")]
+    public void ShowSettingsMenu(NSObject sender) => Safely(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
 
     public bool ConfirmUpdate(string message) => Dialogs.Confirm("Update available", message, "Update", "Not now");
 

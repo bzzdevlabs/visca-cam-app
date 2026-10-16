@@ -125,10 +125,12 @@ function Focus-App {
     Wait-For { [Win32.Input]::GetForegroundWindow() -eq $process.MainWindowHandle } "the application to come to the front" | Out-Null
 }
 
-function Click-Button([string] $Name) {
+# Finds the button by its name, or with -AutomationId by its control name (icon-only buttons).
+function Click-Button([string] $Name, [switch] $AutomationId) {
+    $property = if ($AutomationId) { $automation::AutomationIdProperty } else { $automation::NameProperty }
     # Not named $condition: Wait-For's $Condition parameter would shadow it inside the script block.
     $byName = New-Object System.Windows.Automation.AndCondition @(
-        (New-Object System.Windows.Automation.PropertyCondition $automation::NameProperty, $Name),
+        (New-Object System.Windows.Automation.PropertyCondition $property, $Name),
         (New-Object System.Windows.Automation.PropertyCondition $automation::ProcessIdProperty, $process.Id))
     $button = Wait-For { $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $byName) } "the '$Name' button"
     $bounds = $button.Current.BoundingRectangle
@@ -193,6 +195,24 @@ try {
         Assert-Same $first (Invoke-AndSettle { Press-Key 0x31 } "key 1 (preset 1)") "preset 1"
         Assert-Same $second (Invoke-AndSettle { Press-Key 0x32 } "key 2 (preset 2)") "preset 2"
     }
+
+    # Settings panel: opens with Ctrl+, (like the gear button), closes with Escape.
+    Focus-App
+    [Win32.Input]::keybd_event(0x11, 0, 0, [UIntPtr]::Zero)               # Ctrl down.
+    Press-Key 0xBC                                                       # Comma.
+    [Win32.Input]::keybd_event(0x11, 0, $KEYEVENTF_KEYUP, [UIntPtr]::Zero) # Ctrl up.
+    # ::new rather than New-Object: New-Object wraps the ControlType in a PSObject, which
+    # PropertyCondition rejects.
+    $isPanel = [System.Windows.Automation.AndCondition]::new([System.Windows.Automation.Condition[]]@(
+        [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, "Settings"),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window),
+        [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, [int]$process.Id)))
+    $panel = Wait-For { $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $isPanel) } "the settings panel"
+    Start-Sleep -Milliseconds 500
+    Save-WindowImage ([IntPtr]$panel.Current.NativeWindowHandle) "screenshot-settings"
+    Press-Key 0x1B # Escape.
+    Wait-For { -not $automation::RootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $isPanel) } "the settings panel to close" | Out-Null
+    Assert-That $true "the settings panel opens with Ctrl+, and closes with Escape"
 
     # Numeric keypad while another application is in front (Num Lock off: keypad 4 = Left).
     if ([Win32.Input]::GetKeyState($VK_NUMLOCK) -band 1) { Press-Key $VK_NUMLOCK }

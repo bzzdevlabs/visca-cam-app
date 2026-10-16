@@ -26,13 +26,14 @@ On Windows, make the window narrower to put the controls under the video.
 | `+` / `-` (main keyboard or numeric keypad) or Page Up / Page Down (hold; Fn + ↑ / ↓ on a Mac laptop) | Zoom in / out |
 | Home (Fn + ← on a Mac laptop) | Home position |
 | `1` … `9` | Go to preset 1 … 9 |
+| Ctrl+, (Cmd+, on a Mac) | [Settings](./settings.md) |
 
 Holding a key moves the camera continuously until you release it. The keys keep driving the
 camera after you click the speed slider or the preset list; only text fields take them.
 
 ## Numeric keypad while another app is in front (Windows)
 
-Turn on **Numpad in background** (under the speed slider) to keep controlling the camera from the
+Turn on **Numeric keypad works while another app is in front** in [Settings](./settings.md) to keep controlling the camera from the
 numeric keypad while Zoom, Teams or any other application is in front:
 
 | Keypad | Num Lock off | Num Lock on |
@@ -50,5 +51,5 @@ affected. The setting is remembered.
 
 ## Ceiling-mounted cameras
 
-To reverse the controls of a camera mounted upside down, set `InvertPan` and/or `InvertTilt`
-in the [settings file](./settings.md).
+To reverse the controls of a camera mounted upside down, turn on **Reverse left and right**
+and/or **Reverse up and down** in [Settings](./settings.md).

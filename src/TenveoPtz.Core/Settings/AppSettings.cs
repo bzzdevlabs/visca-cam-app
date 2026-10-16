@@ -30,4 +30,14 @@ public sealed class AppSettings
 
     /// <summary>Looks for a newer release on start-up and offers to install it.</summary>
     public bool CheckForUpdates { get; set; } = true;
+
+    public AppTheme Theme { get; set; } = AppTheme.System;
+
+    /// <summary>Independent copy, for the settings panel to edit.</summary>
+    public AppSettings Clone()
+    {
+        var copy = (AppSettings)MemberwiseClone();
+        copy.Connection = Connection.Clone();
+        return copy;
+    }
 }

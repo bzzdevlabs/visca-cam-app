@@ -12,6 +12,8 @@ internal static class MainMenu
         menu.AddItem(Submenu("Tenveo PTZ",
             Item("About Tenveo PTZ", "orderFrontStandardAboutPanel:"),
             NSMenuItem.SeparatorItem,
+            Item("Settings...", "showSettings:", ","),
+            NSMenuItem.SeparatorItem,
             Item("Hide Tenveo PTZ", "hide:", "h"),
             Item("Hide Others", "hideOtherApplications:", "h", NSEventModifierMask.CommandKeyMask | NSEventModifierMask.AlternateKeyMask),
             Item("Show All", "unhideAllApplications:"),

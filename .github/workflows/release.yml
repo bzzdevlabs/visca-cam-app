@@ -36,6 +36,14 @@ jobs:
     env:
       VERSION: ${{ needs.build.outputs.version }}
     steps:
+      # Only what the release text needs.
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            CHANGELOG.md
+            build
+          sparse-checkout-cone-mode: false
+
       - uses: actions/download-artifact@v8
         with:
           name: ${{ needs.build.outputs.windows-artifact }}
@@ -56,9 +64,17 @@ jobs:
           if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release upload "v$VERSION" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
           else
+            # The version's CHANGELOG.md section is the release text; generated notes otherwise.
+            bash build/changelog-notes.sh "$VERSION" > notes.md
+            if [[ -s notes.md ]]; then
+              notes=(--notes-file notes.md)
+            else
+              echo "::warning title=No changelog entry::CHANGELOG.md has no section for $VERSION; the release text is generated."
+              notes=(--generate-notes)
+            fi
             gh release create "v$VERSION" "${assets[@]}" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
               --title "Tenveo PTZ $VERSION" \
-              --generate-notes
+              "${notes[@]}"
           fi
