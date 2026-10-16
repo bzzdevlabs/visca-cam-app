@@ -14,7 +14,7 @@ namespace TenveoPtz.App.Views;
 /// </summary>
 internal sealed partial class MainForm
 {
-    private const int SideColumnWidth = 320;
+    private const int SideColumnWidth = 350;
     private const int Gap = 12;
 
     /// <summary>Below this client width (logical pixels) the controls go under the video.</summary>
