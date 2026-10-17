@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using TenveoPtz.App.Views.Controls;
 using TenveoPtz.App.Views.Theming;
+using TenveoPtz.Core.Localization;
 
 namespace TenveoPtz.App.Views;
 
@@ -13,7 +14,7 @@ namespace TenveoPtz.App.Views;
 /// </summary>
 internal sealed partial class MainForm
 {
-    private const int SideColumnWidth = 320;
+    private const int SideColumnWidth = 350;
     private const int Gap = 12;
 
     /// <summary>Below this client width (logical pixels) the controls go under the video.</summary>
@@ -61,8 +62,8 @@ internal sealed partial class MainForm
         {
             Dock = DockStyle.Fill,
             Margin = new Padding(0, 0, Gap, 0),
-            PlaceholderTitle = "No video",
-            PlaceholderText = "Choose the camera above, then select Connect.",
+            PlaceholderTitle = Strings.NoVideoTitle,
+            PlaceholderText = Strings.NoVideoHint,
         };
         statusLine = new StatusLine { Dock = DockStyle.Fill, Margin = new Padding(0, 4, 0, 0) };
 

@@ -5,6 +5,14 @@ What changed in each version of Tenveo PTZ, newest first. Versions follow
 the build number. Each version's section is also the text of its
 [GitHub release](https://github.com/bzzdevlabs/visca-cam-app/releases).
 
+## [0.7.0] - 2026-10-16
+
+### Added
+
+- **French interface**, now the default. **Language** in the Settings panel switches between
+  French and English; the app offers to restart to apply it. The log and the debug console stay
+  in English.
+
 ## [0.6.0] - 2026-10-16
 
 ### Added
@@ -143,6 +151,7 @@ the build number. Each version's section is also the text of its
   focus over USB (UVC) or a serial cable (VISCA), named presets, keyboard shortcuts, and settings
   remembered between runs.
 
+[0.7.0]: https://github.com/bzzdevlabs/visca-cam-app/releases/tag/v0.7.0.75
 [0.6.0]: https://github.com/bzzdevlabs/visca-cam-app/releases/tag/v0.6.0.74
 [0.5.4]: https://github.com/bzzdevlabs/visca-cam-app/releases/tag/v0.5.4.73
 [0.5.3]: https://github.com/bzzdevlabs/visca-cam-app/releases/tag/v0.5.3.72

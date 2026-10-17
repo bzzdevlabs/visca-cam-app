@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AVFoundation;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Video;
 using TenveoPtz.Mac.Views.Controls;
 
@@ -23,7 +24,7 @@ internal sealed class AVFoundationVideoService : IVideoService
     public IVideoSession Start(VideoDevice device, bool preview)
     {
         var capture = FindCaptureDevices().FirstOrDefault(d => d.LocalizedName == device.Name)
-            ?? throw new InvalidOperationException($"Video device \"{device.Name}\" is not connected.");
+            ?? throw new InvalidOperationException(Strings.VideoDeviceNotConnected(device.Name));
         return new AVFoundationVideoSession(device, capture, host, preview);
     }
 

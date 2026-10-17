@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using TenveoPtz.App.Views.Theming;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Presets;
 
@@ -13,7 +14,7 @@ internal sealed class PresetPanel : UserControl
     private readonly PresetListBox list = new()
     {
         Dock = DockStyle.Fill,
-        EmptyText = "No presets yet. Frame a shot, then select \"New\".",
+        EmptyText = Strings.NoPresetsYet,
     };
 
     public PresetPanel(ToolTip toolTips)
@@ -21,20 +22,20 @@ internal sealed class PresetPanel : UserControl
         list.DoubleClick += (_, _) => RaiseForSelection(RecallRequested);
         list.KeyDown += OnListKeyDown;
 
-        var add = new FluentButton("New", Glyphs.Add, ButtonAppearance.Accent);
-        toolTips.SetToolTip(add, "Save the current camera position as a new preset");
+        var add = new FluentButton(Strings.NewPreset, Glyphs.Add, ButtonAppearance.Accent);
+        toolTips.SetToolTip(add, Strings.NewPresetTip);
         add.Click += (_, _) => AddRequested?.Invoke(this, EventArgs.Empty);
 
         var toolbar = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = false, Margin = new Padding(0), Padding = new Padding(0, 0, 0, 8) };
         toolbar.Controls.Add(add);
-        toolbar.Controls.Add(Tool(Glyphs.Play, "Go to the selected preset (double-click, Enter or 1-9)", toolTips, () => RaiseForSelection(RecallRequested)));
-        toolbar.Controls.Add(Tool(Glyphs.Save, "Replace the selected preset with the current position", toolTips, () => RaiseForSelection(OverwriteRequested)));
-        toolbar.Controls.Add(Tool(Glyphs.Rename, "Rename the selected preset", toolTips, () => RaiseForSelection(RenameRequested)));
-        toolbar.Controls.Add(Tool(Glyphs.Delete, "Delete the selected preset", toolTips, () => RaiseForSelection(DeleteRequested)));
-        toolbar.Controls.Add(Tool(Glyphs.MoveUp, "Move up (changes its number key)", toolTips, () => RaiseMove(-1)));
-        toolbar.Controls.Add(Tool(Glyphs.MoveDown, "Move down (changes its number key)", toolTips, () => RaiseMove(1)));
+        toolbar.Controls.Add(Tool(Glyphs.Play, Strings.RecallPresetTip(Strings.EnterKey), toolTips, () => RaiseForSelection(RecallRequested)));
+        toolbar.Controls.Add(Tool(Glyphs.Save, Strings.OverwritePresetTip, toolTips, () => RaiseForSelection(OverwriteRequested)));
+        toolbar.Controls.Add(Tool(Glyphs.Rename, Strings.RenamePresetTip, toolTips, () => RaiseForSelection(RenameRequested)));
+        toolbar.Controls.Add(Tool(Glyphs.Delete, Strings.DeletePresetTip, toolTips, () => RaiseForSelection(DeleteRequested)));
+        toolbar.Controls.Add(Tool(Glyphs.MoveUp, Strings.MoveUpTip, toolTips, () => RaiseMove(-1)));
+        toolbar.Controls.Add(Tool(Glyphs.MoveDown, Strings.MoveDownTip, toolTips, () => RaiseMove(1)));
 
-        var card = new Card("Presets") { Dock = DockStyle.Fill };
+        var card = new Card(Strings.Presets) { Dock = DockStyle.Fill };
         card.Controls.Add(list);
         card.Controls.Add(toolbar);
         Controls.Add(card);

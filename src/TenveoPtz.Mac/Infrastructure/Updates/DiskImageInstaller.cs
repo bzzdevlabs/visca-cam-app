@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Updates;
 
 namespace TenveoPtz.Mac.Infrastructure.Updates;
@@ -32,7 +33,7 @@ internal sealed class DiskImageInstaller : IPackageInstaller
     {
         if (bundlePath.StartsWith("/Volumes/", StringComparison.Ordinal) || bundlePath.Contains("/AppTranslocation/", StringComparison.Ordinal))
         {
-            throw new InvalidOperationException("Move Tenveo PTZ to the Applications folder first: it cannot update itself where it is.");
+            throw new InvalidOperationException(Strings.MoveToApplicationsFirst);
         }
 
         var staging = Path.Combine(Folder, StagingPrefix + Guid.NewGuid().ToString("N") + ".app");
@@ -43,7 +44,7 @@ internal sealed class DiskImageInstaller : IPackageInstaller
             try
             {
                 var app = Directory.GetDirectories(mountPoint, "*.app").FirstOrDefault(IsApplication)
-                    ?? throw new InvalidDataException("The downloaded update does not contain the application.");
+                    ?? throw new InvalidDataException(Strings.UpdateHasNoApplication);
                 // ditto keeps permissions, extended attributes and the code signature intact.
                 Run("/usr/bin/ditto", app, staging);
             }

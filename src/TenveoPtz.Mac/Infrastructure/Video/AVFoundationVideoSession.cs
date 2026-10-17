@@ -1,5 +1,6 @@
 using System;
 using AVFoundation;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Ptz;
 using TenveoPtz.Core.Video;
 using TenveoPtz.Mac.Infrastructure.Uvc;
@@ -61,12 +62,12 @@ internal sealed class AVFoundationVideoSession : IVideoSession
     private static AVCaptureVideoPreviewLayer StartPreview(VideoDevice device, AVCaptureDevice capture, AVCaptureSession session, VideoView host)
     {
         var input = AVCaptureDeviceInput.FromDevice(capture, out var error)
-            ?? throw new InvalidOperationException($"Cannot open \"{device.Name}\": {error?.LocalizedDescription ?? "unknown error"}.");
+            ?? throw new InvalidOperationException(Strings.CannotOpenCamera(device.Name, error?.LocalizedDescription));
         if (!session.CanAddInput(input))
         {
             input.Dispose();
             session.Dispose();
-            throw new InvalidOperationException($"\"{device.Name}\" is in use by another application.");
+            throw new InvalidOperationException(Strings.CameraInUse(device.Name));
         }
 
         session.AddInput(input);
@@ -83,10 +84,10 @@ internal sealed class AVFoundationVideoSession : IVideoSession
             case AVAuthorizationStatus.Denied:
             case AVAuthorizationStatus.Restricted:
                 throw new UnauthorizedAccessException(
-                    "Tenveo PTZ may not use the camera. Allow it in System Settings > Privacy & Security > Camera, then restart the app.");
+                    Strings.CameraAccessDenied);
             case AVAuthorizationStatus.NotDetermined:
                 AVCaptureDevice.RequestAccessForMediaType(AVAuthorizationMediaType.Video, _ => { });
-                throw new UnauthorizedAccessException("Allow Tenveo PTZ to use the camera, then press Connect again.");
+                throw new UnauthorizedAccessException(Strings.AllowCameraThenConnect);
         }
     }
 }

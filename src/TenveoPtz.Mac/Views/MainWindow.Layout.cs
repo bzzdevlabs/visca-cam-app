@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AppKit;
 using CoreGraphics;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Video;
 using TenveoPtz.Mac.Views.Controls;
 
@@ -18,30 +19,30 @@ internal sealed partial class MainWindow
 
     private static readonly int[] BaudRates = { 2400, 4800, 9600, 19200, 38400, 57600, 115200 };
 
-    private readonly NSPopUpButton devicePopup = Popup(240, "Video device used for the live preview");
-    private readonly NSPopUpButton modePopup = Popup(190, "USB: control through the camera's USB cable. Serial: VISCA through an RS-232/RS-485 cable.");
-    private readonly NSPopUpButton portPopup = Popup(220, "Serial port of the VISCA cable or adapter");
-    private readonly NSPopUpButton baudPopup = Popup(120, "VISCA baud rate (must match the camera, usually 9600)");
-    private readonly NSPopUpButton addressPopup = Popup(120, "VISCA camera address (usually 1)");
-    private readonly NSButton refreshButton = IconButton("arrow.clockwise", "Refresh the device lists");
-    private readonly NSButton pinButton = IconButton("pin", "Keep this window on top of other windows");
-    private readonly NSButton connectButton = new() { Title = "Connect", BezelStyle = NSBezelStyle.Rounded, ImagePosition = NSCellImagePosition.ImageLeading, ToolTip = "Open the video and camera control" };
-    private readonly NSSlider speedSlider = new() { MinValue = 1, MaxValue = 10, DoubleValue = 5, ToolTip = "Pan, tilt and zoom speed" };
+    private readonly NSPopUpButton devicePopup = Popup(240, Strings.VideoDeviceTip);
+    private readonly NSPopUpButton modePopup = Popup(190, Strings.ModeTip);
+    private readonly NSPopUpButton portPopup = Popup(220, Strings.SerialPortTip);
+    private readonly NSPopUpButton baudPopup = Popup(120, Strings.BaudRateTip);
+    private readonly NSPopUpButton addressPopup = Popup(120, Strings.AddressTip);
+    private readonly NSButton refreshButton = IconButton("arrow.clockwise", Strings.RefreshTip);
+    private readonly NSButton pinButton = IconButton("pin", Strings.PinTip);
+    private readonly NSButton connectButton = new() { Title = Strings.Connect, BezelStyle = NSBezelStyle.Rounded, ImagePosition = NSCellImagePosition.ImageLeading, ToolTip = Strings.ConnectTip };
+    private readonly NSSlider speedSlider = new() { MinValue = 1, MaxValue = 10, DoubleValue = 5, ToolTip = Strings.SpeedTip };
     private readonly DirectionPad directionPad = new();
-    private readonly HoldButton zoomOut = Hold("minus.magnifyingglass", null, "Zoom out (hold, or - / Page Down)");
-    private readonly HoldButton zoomIn = Hold("plus.magnifyingglass", null, "Zoom in (hold, or + / Page Up)");
-    private readonly HoldButton focusNear = Hold(null, "Near", "Focus nearer (hold)");
-    private readonly HoldButton focusFar = Hold(null, "Far", "Focus farther (hold)");
-    private readonly NSButton autoFocus = NSButton.CreateCheckbox("Autofocus", () => { });
-    private readonly NSButton addPreset = new() { Title = "New", BezelStyle = NSBezelStyle.Rounded, ImagePosition = NSCellImagePosition.ImageLeading, ToolTip = "Save the current camera position as a new preset" };
-    private readonly NSButton recallPreset = IconButton("play", "Go to the selected preset (double-click, Return or 1-9)");
-    private readonly NSButton overwritePreset = IconButton("square.and.arrow.down", "Replace the selected preset with the current position");
-    private readonly NSButton renamePreset = IconButton("pencil", "Rename the selected preset");
-    private readonly NSButton deletePreset = IconButton("trash", "Delete the selected preset");
-    private readonly NSButton movePresetUp = IconButton("arrow.up", "Move up (changes its number key)");
-    private readonly NSButton movePresetDown = IconButton("arrow.down", "Move down (changes its number key)");
+    private readonly HoldButton zoomOut = Hold("minus.magnifyingglass", null, Strings.ZoomOutTip);
+    private readonly HoldButton zoomIn = Hold("plus.magnifyingglass", null, Strings.ZoomInTip);
+    private readonly HoldButton focusNear = Hold(null, Strings.Near, Strings.FocusNearTip);
+    private readonly HoldButton focusFar = Hold(null, Strings.Far, Strings.FocusFarTip);
+    private readonly NSButton autoFocus = NSButton.CreateCheckbox(Strings.Autofocus, () => { });
+    private readonly NSButton addPreset = new() { Title = Strings.NewPreset, BezelStyle = NSBezelStyle.Rounded, ImagePosition = NSCellImagePosition.ImageLeading, ToolTip = Strings.NewPresetTip };
+    private readonly NSButton recallPreset = IconButton("play", Strings.RecallPresetTip(Strings.ReturnKey));
+    private readonly NSButton overwritePreset = IconButton("square.and.arrow.down", Strings.OverwritePresetTip);
+    private readonly NSButton renamePreset = IconButton("pencil", Strings.RenamePresetTip);
+    private readonly NSButton deletePreset = IconButton("trash", Strings.DeletePresetTip);
+    private readonly NSButton movePresetUp = IconButton("arrow.up", Strings.MoveUpTip);
+    private readonly NSButton movePresetDown = IconButton("arrow.down", Strings.MoveDownTip);
     private readonly PresetTable presetTable = new();
-    private readonly NSTextField emptyPresets = NSTextField.CreateLabel("No presets yet. Frame a shot, then press \"New\".");
+    private readonly NSTextField emptyPresets = NSTextField.CreateLabel(Strings.NoPresetsYet);
     private readonly VideoView videoView = new();
     private readonly NSTextField statusLabel = NSTextField.CreateLabel(string.Empty);
     private NSStackView serialRow = null!;
@@ -126,19 +127,19 @@ internal sealed partial class MainWindow
 
     private void InitializeLayout()
     {
-        modePopup.AddItems(new[] { "USB control (UVC)", "Serial control (VISCA)" });
-        baudPopup.AddItems(BaudRates.Select(rate => $"{rate} baud").ToArray());
-        addressPopup.AddItems(Enumerable.Range(1, 7).Select(address => $"Address {address}").ToArray());
-        devicePopup.AddItem("No camera found");
-        portPopup.AddItem("No serial port");
-        connectButton.Image = Symbol("play.fill", "Connect");
+        modePopup.AddItems(new[] { Strings.UsbControl, Strings.SerialControl });
+        baudPopup.AddItems(BaudRates.Select(Strings.Baud).ToArray());
+        addressPopup.AddItems(Enumerable.Range(1, 7).Select(Strings.Address).ToArray());
+        devicePopup.AddItem(Strings.NoCameraFound);
+        portPopup.AddItem(Strings.NoSerialPort);
+        connectButton.Image = Symbol("play.fill", Strings.Connect);
         connectButton.BezelColor = NSColor.ControlAccent;
         connectButton.KeyEquivalent = string.Empty;
         pinButton.SetButtonType(NSButtonType.PushOnPushOff);
-        addPreset.Image = Symbol("plus", "New");
+        addPreset.Image = Symbol("plus", Strings.NewPreset);
         addPreset.BezelColor = NSColor.ControlAccent;
         autoFocus.State = NSCellStateValue.On;
-        autoFocus.ToolTip = "Let the camera focus by itself";
+        autoFocus.ToolTip = Strings.AutofocusTip;
         speedSlider.TickMarksCount = 10;
         speedSlider.AllowsTickMarkValuesOnly = true;
         statusLabel.LineBreakMode = NSLineBreakMode.TruncatingTail;
@@ -157,12 +158,12 @@ internal sealed partial class MainWindow
         selection.WidthAnchor.ConstraintEqualTo(header.WidthAnchor).Active = true;
 
         // Side column cards.
-        var speedRow = Row(SecondaryLabel("Speed"), speedSlider);
+        var speedRow = Row(SecondaryLabel(Strings.Speed), speedSlider);
         var move = Column(10, directionPad, speedRow);
         move.Alignment = NSLayoutAttribute.CenterX;
         speedRow.WidthAnchor.ConstraintEqualTo(move.WidthAnchor).Active = true;
 
-        var zoomLabel = SecondaryLabel("Zoom");
+        var zoomLabel = SecondaryLabel(Strings.Zoom);
         var zoomRow = Row(zoomLabel, new NSView(), zoomOut, zoomIn);
         var focusRow = Row(autoFocus, new NSView(), focusNear, focusFar);
         var lens = Column(8, zoomRow, focusRow);
@@ -180,8 +181,8 @@ internal sealed partial class MainWindow
         scroll.WidthAnchor.ConstraintEqualTo(presets.WidthAnchor).Active = true;
         scroll.HeightAnchor.ConstraintGreaterThanOrEqualTo(120).Active = true;
 
-        var presetCard = Card("Presets", presets);
-        var side = Column(Gap, Card("Pan and tilt", move), Card("Zoom and focus", lens), presetCard);
+        var presetCard = Card(Strings.Presets, presets);
+        var side = Column(Gap, Card(Strings.PanAndTilt, move), Card(Strings.ZoomAndFocus, lens), presetCard);
         side.TranslatesAutoresizingMaskIntoConstraints = false;
         side.WidthAnchor.ConstraintEqualTo(SideColumnWidth).Active = true;
         FillWidth(side);

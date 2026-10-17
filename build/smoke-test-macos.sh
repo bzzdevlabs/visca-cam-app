@@ -5,7 +5,7 @@
 # universal binary are exercised. Used by CI; also handy on a test Mac.
 # Usage: build/smoke-test-macos.sh <TenveoPTZ.app> <screenshot folder> [--sample-presets]
 #   --sample-presets writes sample presets and settings to ~/Library/Application Support/TenveoPTZ
-#   first (the light run uses USB control, the dark run serial control). Do not use it on a Mac
+#   first (the light run uses USB control in French, the dark run serial control in English). Do not use it on a Mac
 #   whose settings matter.
 set -euo pipefail
 
@@ -35,13 +35,14 @@ XML
 fi
 
 run() {
-  local theme="$1" mode="$2" arch="$3"
+  local theme="$1" mode="$2" arch="$3" language="$4"
   if [[ "$sample" == "--sample-presets" ]]; then
     cat > "$data/settings.xml" <<XML
 <?xml version="1.0" encoding="utf-8"?>
 <AppSettings>
   <Connection><Mode>$mode</Mode><BaudRate>9600</BaudRate><Address>1</Address></Connection>
   <Speed>0.5</Speed>
+  <Language>$language</Language>
 </AppSettings>
 XML
   fi
@@ -74,5 +75,5 @@ XML
   echo "[$theme/$arch] Window shown and closed cleanly; screenshot saved to $image"
 }
 
-run light Uvc arm64
-run dark Visca x86_64
+run light Uvc arm64 French
+run dark Visca x86_64 English

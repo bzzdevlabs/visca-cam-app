@@ -1,3 +1,4 @@
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Settings;
 
 namespace TenveoPtz.Core.Presentation;
@@ -26,6 +27,12 @@ public sealed partial class MainPresenter
         TrySave(() => settingsStore.Save(settings));
         log.Info("Settings changed.");
 
+        if (settings.Language != previous.Language)
+        {
+            OfferRestartForLanguage();
+            return;
+        }
+
         // The UVC move mode is chosen when the camera opens.
         if (IsConnected && previous.UvcContinuousMoves != settings.UvcContinuousMoves && settings.Connection.Mode == ControlMode.Uvc)
         {
@@ -33,24 +40,44 @@ public sealed partial class MainPresenter
         }
         else
         {
-            ShowStatus("Settings saved.", false);
+            ShowStatus(Strings.SettingsSaved, false);
         }
     }
 
     private void ResetSettings()
     {
-        if (!view.Confirm("Restore every setting to its default? This disconnects the camera and resets the camera choice, speed, keys, theme and other options. Presets are kept."))
+        if (!view.Confirm(Strings.ConfirmReset))
         {
             return;
         }
 
+        var previousLanguage = settings.Language;
         CloseSession();
         settings = new AppSettings();
         ApplyToView(includeConnection: true);
         view.ShowConnected(false);
         TrySave(() => settingsStore.Save(settings));
         log.Info("Settings reset to their defaults.");
-        ShowStatus("All settings were reset to their defaults. Presets were kept.", false);
+        ShowStatus(Strings.ResetDone, false);
+        if (settings.Language != previousLanguage)
+        {
+            OfferRestartForLanguage();
+        }
+    }
+
+    /// <summary>The windows are built in the language read at start-up: a new one needs a restart.</summary>
+    private void OfferRestartForLanguage()
+    {
+        log.Info($"Language changed to {settings.Language}.");
+        if (view.Confirm(Strings.RestartForLanguage(settings.Language)))
+        {
+            log.Info("Restarting to change the language.");
+            view.Restart();
+        }
+        else
+        {
+            ShowStatus(Strings.LanguageAtNextStart, false);
+        }
     }
 
     /// <summary>Copies what the window holds (camera choice, speed, toggles) into the settings.</summary>

@@ -1,5 +1,6 @@
 using System;
 using TenveoPtz.Core.Diagnostics;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Ptz;
 
 namespace TenveoPtz.Core.Presentation;
@@ -100,7 +101,7 @@ public sealed partial class MainPresenter
     {
         if (session is null)
         {
-            ShowStatus("Not connected. Press Connect first.", true);
+            ShowStatus(Strings.NotConnected, true);
             return false;
         }
 

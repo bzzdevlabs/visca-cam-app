@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Serialization;
+using TenveoPtz.Core.Localization;
 
 namespace TenveoPtz.Core.Presets;
 
@@ -58,7 +59,7 @@ public sealed class PresetBook
         var trimmed = name?.Trim() ?? string.Empty;
         if (trimmed.Length == 0)
         {
-            throw new ArgumentException("A preset name is required.", nameof(name));
+            throw new ArgumentException(Strings.PresetNameRequired, nameof(name));
         }
 
         return trimmed;
@@ -75,7 +76,7 @@ public sealed class PresetBook
             }
         }
 
-        throw new InvalidOperationException($"All {LastSlot - FirstSlot + 1} preset slots are in use.");
+        throw new InvalidOperationException(Strings.PresetSlotsFull(LastSlot - FirstSlot + 1));
     }
 
     private void EnsureContains(Preset preset)

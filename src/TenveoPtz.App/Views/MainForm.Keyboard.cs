@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using TenveoPtz.App.Infrastructure.Input;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Ptz;
 using TenveoPtz.Core.Settings;
@@ -100,7 +101,7 @@ internal sealed partial class MainForm
             }
             catch (System.ComponentModel.Win32Exception ex)
             {
-                statusLine.Show(ex.Message + ".", true);
+                statusLine.Show(Strings.CannotWatchKeypad(ex.NativeErrorCode), true);
             }
         }
         else if (!BackgroundNumpad && numpadHook is not null)

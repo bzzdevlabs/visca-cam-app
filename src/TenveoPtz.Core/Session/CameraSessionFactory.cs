@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using TenveoPtz.Core.Diagnostics;
 using TenveoPtz.Core.Execution;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Ptz;
 using TenveoPtz.Core.Settings;
 using TenveoPtz.Core.Transport;
@@ -63,7 +64,7 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
         }
 
         var device = videoService.GetDevices().FirstOrDefault(d => d.Name == deviceName)
-            ?? throw new InvalidOperationException($"Video device \"{deviceName}\" is not connected.");
+            ?? throw new InvalidOperationException(Strings.VideoDeviceNotConnected(deviceName));
         var video = videoService.Start(device, preview);
         log.Info($"{(preview ? "Video preview started on" : "Opened without preview")} \"{deviceName}\" ({(video.Axes is null ? "no" : "with")} UVC camera controls).");
         return video;
@@ -73,7 +74,7 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
     {
         if (string.IsNullOrEmpty(options.PortName))
         {
-            throw new InvalidOperationException("Select the COM port the camera's VISCA cable is connected to.");
+            throw new InvalidOperationException(Strings.SelectComPort);
         }
 
         var transport = serialPorts.Open(options.PortName, options.BaudRate);
@@ -97,8 +98,8 @@ public sealed class CameraSessionFactory : ICameraSessionFactory
         var axes = video?.Axes
             ?? throw new InvalidOperationException(
                 video is null
-                    ? "UVC control needs the camera's video device: select it in the Camera list."
-                    : "This video device does not expose UVC pan/tilt/zoom controls. Use VISCA instead.");
+                    ? Strings.UvcNeedsVideoDevice
+                    : Strings.NoUvcControls);
         foreach (CameraAxis axis in Enum.GetValues(typeof(CameraAxis)))
         {
             var range = axes.GetRange(axis);

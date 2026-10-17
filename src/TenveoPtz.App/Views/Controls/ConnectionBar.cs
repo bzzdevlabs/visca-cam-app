@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using TenveoPtz.App.Views.Theming;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Settings;
 using TenveoPtz.Core.Video;
 
@@ -16,11 +17,11 @@ internal sealed class ConnectionBar : UserControl
 {
     private static readonly int[] BaudRates = { 2400, 4800, 9600, 19200, 38400, 57600, 115200 };
 
-    private readonly DropDownSelector devices = new(260, "No camera found", Glyphs.Camera);
-    private readonly DropDownSelector mode = new(190, "Control");
-    private readonly DropDownSelector ports = new(120, "No COM port");
-    private readonly DropDownSelector baudRates = new(120, "Baud rate");
-    private readonly DropDownSelector addresses = new(120, "Address");
+    private readonly DropDownSelector devices = new(260, Strings.NoCameraFound, Glyphs.Camera);
+    private readonly DropDownSelector mode = new(190, Strings.ControlPlaceholder);
+    private readonly DropDownSelector ports = new(120, Strings.NoComPort);
+    private readonly DropDownSelector baudRates = new(120, Strings.BaudRatePlaceholder);
+    private readonly DropDownSelector addresses = new(120, Strings.AddressPlaceholder);
     private readonly FlowLayoutPanel serialSettings;
     private readonly FlowLayoutPanel selection;
     private readonly FlowLayoutPanel modeRow;
@@ -28,9 +29,9 @@ internal sealed class ConnectionBar : UserControl
     private readonly TableLayoutPanel layout;
     private bool compact;
     private bool settingOptions;
-    private readonly FluentButton connect = new("Connect", Glyphs.Connect, ButtonAppearance.Accent);
+    private readonly FluentButton connect = new(Strings.Connect, Glyphs.Connect, ButtonAppearance.Accent);
     private readonly FluentButton pin = new(string.Empty, Glyphs.Pin, ButtonAppearance.Subtle);
-    private readonly ToggleSwitch preview = new("Preview") { Checked = true, Margin = new Padding(8, 6, 2, 6) };
+    private readonly ToggleSwitch preview = new(Strings.Preview) { Checked = true, Margin = new Padding(8, 6, 2, 6) };
     private bool connected;
 
     public ConnectionBar(ToolTip toolTips)
@@ -38,18 +39,18 @@ internal sealed class ConnectionBar : UserControl
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
-        mode.SetItems(new object[] { new Choice<ControlMode>(ControlMode.Uvc, "USB control (UVC)"), new Choice<ControlMode>(ControlMode.Visca, "Serial control (VISCA)") });
+        mode.SetItems(new object[] { new Choice<ControlMode>(ControlMode.Uvc, Strings.UsbControl), new Choice<ControlMode>(ControlMode.Visca, Strings.SerialControl) });
         mode.SelectedItem = mode.Items[0];
         mode.SelectionChanged += (_, _) => UpdateSerialSettings();
-        baudRates.SetItems(BaudRates.Select(rate => (object)new Choice<int>(rate, $"{rate} baud")));
-        addresses.SetItems(Enumerable.Range(1, 7).Select(address => (object)new Choice<int>(address, $"Address {address}")));
+        baudRates.SetItems(BaudRates.Select(rate => (object)new Choice<int>(rate, Strings.Baud(rate))));
+        addresses.SetItems(Enumerable.Range(1, 7).Select(address => (object)new Choice<int>(address, Strings.Address(address))));
 
-        toolTips.SetToolTip(devices, "Video device used for the live preview");
-        toolTips.SetToolTip(mode, "USB: control through the camera's USB cable. Serial: VISCA through an RS-232/RS-485 cable.");
-        toolTips.SetToolTip(ports, "COM port of the VISCA serial cable or adapter");
-        toolTips.SetToolTip(baudRates, "VISCA baud rate (must match the camera, usually 9600)");
-        toolTips.SetToolTip(addresses, "VISCA camera address (usually 1)");
-        toolTips.SetToolTip(preview, "Show the camera's video here. Turn off to use the camera in another app (Zoom, Teams...) while controlling it from here.");
+        toolTips.SetToolTip(devices, Strings.VideoDeviceTip);
+        toolTips.SetToolTip(mode, Strings.ModeTip);
+        toolTips.SetToolTip(ports, Strings.ComPortTip);
+        toolTips.SetToolTip(baudRates, Strings.BaudRateTip);
+        toolTips.SetToolTip(addresses, Strings.AddressTip);
+        toolTips.SetToolTip(preview, Strings.PreviewTip);
         preview.CheckedChanged += (_, _) =>
         {
             if (!settingOptions)
@@ -57,16 +58,16 @@ internal sealed class ConnectionBar : UserControl
                 PreviewChanged?.Invoke(this, EventArgs.Empty);
             }
         };
-        toolTips.SetToolTip(pin, "Keep this window on top of other windows");
+        toolTips.SetToolTip(pin, Strings.PinTip);
         var settingsButton = new FluentButton(string.Empty, Glyphs.Settings, ButtonAppearance.Subtle);
-        toolTips.SetToolTip(settingsButton, "Settings (Ctrl+,)");
-        settingsButton.AccessibleName = "Settings";
+        toolTips.SetToolTip(settingsButton, Strings.SettingsTip("Ctrl+,"));
+        settingsButton.AccessibleName = Strings.Settings;
         settingsButton.Name = "SettingsButton"; // UI Automation id, used by the CI test.
         settingsButton.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
-        toolTips.SetToolTip(connect, "Open the video and camera control");
+        toolTips.SetToolTip(connect, Strings.ConnectTip);
 
         var refresh = new FluentButton(string.Empty, Glyphs.Refresh, ButtonAppearance.Subtle);
-        toolTips.SetToolTip(refresh, "Refresh the device lists");
+        toolTips.SetToolTip(refresh, Strings.RefreshTip);
         refresh.Click += (_, _) => RefreshRequested?.Invoke(this, EventArgs.Empty);
         pin.Click += (_, _) =>
         {
@@ -173,7 +174,7 @@ internal sealed class ConnectionBar : UserControl
     public void ShowConnected(bool isConnected)
     {
         connected = isConnected;
-        connect.Text = isConnected ? "Disconnect" : "Connect";
+        connect.Text = isConnected ? Strings.Disconnect : Strings.Connect;
         connect.Glyph = isConnected ? Glyphs.Stop : Glyphs.Connect;
         connect.Appearance = isConnected ? ButtonAppearance.Standard : ButtonAppearance.Accent;
         foreach (var selector in new[] { devices, mode, ports, baudRates, addresses })
@@ -231,23 +232,4 @@ internal sealed class ConnectionBar : UserControl
 
     private void UpdateSerialSettings() =>
         serialSettings.Visible = (mode.SelectedItem as Choice<ControlMode>)?.Value == ControlMode.Visca;
-
-    /// <summary>Selector item pairing a value with its label.</summary>
-    private sealed class Choice<T>
-    {
-        public Choice(T value, string label)
-        {
-            Value = value;
-            Label = label;
-        }
-
-        public T Value { get; }
-
-        public string Label { get; }
-
-        public static object? Find(DropDownSelector selector, T value) =>
-            selector.Items.OfType<Choice<T>>().FirstOrDefault(c => EqualityComparer<T>.Default.Equals(c.Value, value));
-
-        public override string ToString() => Label;
-    }
 }

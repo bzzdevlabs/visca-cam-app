@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using CoreFoundation;
 using Foundation;
 using ObjCRuntime;
+using TenveoPtz.Core.Localization;
 
 namespace TenveoPtz.Mac.Infrastructure.Uvc;
 
@@ -67,7 +68,7 @@ internal sealed class UvcDevice : IDisposable
         var status = Transfer(ClassSet, SetCurrent, selector, data);
         if (status != IOKitNative.Success)
         {
-            throw new IOException($"The camera rejected the command (IOKit error 0x{status:X8}).");
+            throw new IOException(Strings.CameraRejectedCommand($"0x{status:X8}"));
         }
     }
 

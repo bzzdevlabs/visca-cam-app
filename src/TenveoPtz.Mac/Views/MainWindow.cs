@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using AppKit;
 using Foundation;
+using TenveoPtz.Core.Localization;
 using TenveoPtz.Core.Presentation;
 using TenveoPtz.Core.Presets;
 using TenveoPtz.Core.Settings;
@@ -154,7 +155,7 @@ internal sealed partial class MainWindow : NSWindow, IMainView
         set
         {
             pinButton.State = value ? NSCellStateValue.On : NSCellStateValue.Off;
-            pinButton.Image = Symbol(value ? "pin.fill" : "pin", "Keep on top");
+            pinButton.Image = Symbol(value ? "pin.fill" : "pin", Strings.KeepOnTop);
             Level = value ? NSWindowLevel.Floating : NSWindowLevel.Normal;
         }
     }
@@ -162,19 +163,19 @@ internal sealed partial class MainWindow : NSWindow, IMainView
     public void ShowVideoDevices(IReadOnlyList<VideoDevice> devices)
     {
         videoDevices = new List<VideoDevice>(devices);
-        Fill(devicePopup, videoDevices.ConvertAll(d => d.Name), "No camera found");
+        Fill(devicePopup, videoDevices.ConvertAll(d => d.Name), Strings.NoCameraFound);
     }
 
     public void ShowSerialPorts(IReadOnlyList<string> portNames)
     {
         serialPorts = new List<string>(portNames);
-        Fill(portPopup, serialPorts.ConvertAll(PortLabel), "No serial port");
+        Fill(portPopup, serialPorts.ConvertAll(PortLabel), Strings.NoSerialPort);
     }
 
     public void ShowConnected(bool connected)
     {
         this.connected = connected;
-        connectButton.Title = connected ? "Disconnect" : "Connect";
+        connectButton.Title = connected ? Strings.Disconnect : Strings.Connect;
         connectButton.Image = Symbol(connected ? "stop.fill" : "play.fill", connectButton.Title);
         connectButton.BezelColor = connected ? null : NSColor.ControlAccent;
         foreach (var popup in new[] { devicePopup, modePopup, portPopup, baudPopup, addressPopup })
@@ -199,7 +200,7 @@ internal sealed partial class MainWindow : NSWindow, IMainView
 
     public string? PromptText(string title, string prompt, string initialValue) => Dialogs.Prompt(title, prompt, initialValue);
 
-    public bool Confirm(string message) => Dialogs.Confirm("Are you sure?", message, "Yes");
+    public bool Confirm(string message) => Dialogs.Confirm(Strings.AreYouSure, message, Strings.Yes);
 
     public SettingsEdit? EditSettings(AppSettings settings) => Dialogs.EditSettings(settings);
 
@@ -207,7 +208,7 @@ internal sealed partial class MainWindow : NSWindow, IMainView
     [Export("showSettings:")]
     public void ShowSettingsMenu(NSObject sender) => Safely(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
 
-    public bool ConfirmUpdate(string message) => Dialogs.Confirm("Update available", message, "Update", "Not now");
+    public bool ConfirmUpdate(string message) => Dialogs.Confirm(Strings.UpdateAvailable, message, Strings.Update, Strings.NotNow);
 
     public void Restart()
     {
@@ -291,7 +292,7 @@ internal sealed partial class MainWindow : NSWindow, IMainView
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             Console.Error.WriteLine(ex);
-            Dialogs.ShowError("Tenveo PTZ - unexpected error", ex.Message);
+            Dialogs.ShowError(Strings.UnexpectedErrorTitle, ex.Message);
         }
     }
 
