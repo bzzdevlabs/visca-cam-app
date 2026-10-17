@@ -34,6 +34,28 @@ public sealed class FileLogSinkTests : IDisposable
     }
 
     [Fact]
+    public void Write_IgnoresNullAndUnwritableFolders()
+    {
+        // A file where the log folder should be: writing fails, the app carries on.
+        Directory.CreateDirectory(Path.GetDirectoryName(folder)!);
+        File.WriteAllText(folder, "not a folder");
+        var sink = new FileLogSink(folder, () => Today);
+
+        sink.Write(null!);
+        sink.Write(new LogEntry(Today, LogLevel.Info, "App", "lost"));
+
+        Assert.True(sink.IsEnabled(LogLevel.Debug));
+        File.Delete(folder);
+    }
+
+    [Fact]
+    public void Constructor_RequiresAFolder()
+    {
+        Assert.Throws<ArgumentException>(() => new FileLogSink(" "));
+        Assert.Equal(folder, new FileLogSink(folder).Folder);
+    }
+
+    [Fact]
     public void Constructor_DeletesFilesOlderThanTheRetention()
     {
         Directory.CreateDirectory(folder);

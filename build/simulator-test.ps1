@@ -1,9 +1,10 @@
 <#
 .SYNOPSIS
     Live end-to-end test on the simulated camera: starts the application with --simulator, drives
-    it like a user (held arrow and zoom keys, the "New" preset button, preset number keys, the
-    numeric keypad while another application is in front) and checks where the simulated camera
-    ended up, from the "Simulator at pan P, tilt T, zoom Z." lines of the application's log.
+    it like a user (held arrow and zoom keys, Shift for precise moves, the Home key, the "New"
+    preset button, preset number keys, the numeric keypad while another application is in
+    front) and checks where the simulated camera ended up, from the "Simulator at pan P, tilt T,
+    zoom Z." lines of the application's log.
     Overwrites %APPDATA%\TenveoPTZ settings and presets: do not run it on a PC whose settings matter.
 .PARAMETER Quirks
     Quirks of the simulated camera (see SimulatedCameraQuirks), e.g. "LaggingReadback".
@@ -196,6 +197,20 @@ try {
         Assert-Same $first (Invoke-AndSettle { Press-Key 0x31 } "key 1 (preset 1)") "preset 1"
         Assert-Same $second (Invoke-AndSettle { Press-Key 0x32 } "key 2 (preset 2)") "preset 2"
     }
+
+    # Precise mode: Shift slows moves to a quarter. Held 3 s, a normal move would cover about
+    # twice what the 1.5 s Right arrow did above.
+    $before = Get-Position
+    [Win32.Input]::keybd_event(0x10, 0, 0, [UIntPtr]::Zero)                # Shift down.
+    $t = Invoke-AndSettle { Hold-Key $VK_RIGHT 3000 -Extended } "Shift+Right held 3 s"
+    [Win32.Input]::keybd_event(0x10, 0, $KEYEVENTF_KEYUP, [UIntPtr]::Zero) # Shift up.
+    $precise = $before.Pan - $t.Pan
+    $normal = $start.Pan - $p.Pan
+    Assert-That ($precise -ge 1 -and $precise -lt 2 * $normal) "Shift moves the camera slowly ($precise against $(2 * $normal) at normal speed)"
+
+    # Home key: back to the home position.
+    $homed = Invoke-AndSettle { Hold-Key 0x24 50 -Extended } "Home key"
+    Assert-That ($homed.Pan -eq 0 -and $homed.Tilt -eq 0) "Home goes back to pan 0, tilt 0"
 
     # Settings panel: opens with Ctrl+, (like the gear button), closes with Escape.
     Focus-App

@@ -76,6 +76,19 @@ public sealed class UpdateInstallerTests : IDisposable
         Assert.True(File.Exists(Path.Combine(app, "notes.old")));
     }
 
+    [Fact]
+    public void DeleteLeftovers_WithoutTheFolderDoesNothing()
+    {
+        new UpdateInstaller(Path.Combine(root, "missing"), "TenveoPTZ.exe").DeleteLeftovers();
+    }
+
+    [Fact]
+    public void Constructor_RequiresFolderAndName()
+    {
+        Assert.Throws<ArgumentException>(() => new UpdateInstaller(" ", "TenveoPTZ.exe"));
+        Assert.Throws<ArgumentException>(() => new UpdateInstaller(app, ""));
+    }
+
     private string Download(string content)
     {
         var path = Path.Combine(root, Guid.NewGuid().ToString("N") + ".exe");

@@ -5,7 +5,7 @@ What changed in each version of Tenveo PTZ, newest first. Versions follow
 the build number. Each version's section is also the text of its
 [GitHub release](https://github.com/bzzdevlabs/visca-cam-app/releases).
 
-## [0.7.0] - 2026-10-16
+## [0.7.0] - 2026-10-17
 
 ### Added
 

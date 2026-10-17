@@ -7,7 +7,7 @@ using TenveoPtz.Core.Ptz;
 namespace TenveoPtz.Core.Tests.Fakes;
 
 /// <summary>PTZ strategy recording each call as a readable string.</summary>
-internal sealed class RecordingPtzController : IPtzController
+internal class RecordingPtzController : IPtzController
 {
     public event EventHandler<ErrorEventArgs>? Faulted;
 
@@ -48,7 +48,7 @@ internal sealed class RecordingPtzController : IPtzController
 
     public void RaiseFault(Exception ex) => Faulted?.Invoke(this, new ErrorEventArgs(ex));
 
-    private void Record(string call)
+    protected void Record(string call)
     {
         if (FailWith is not null)
         {

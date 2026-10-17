@@ -77,4 +77,32 @@ public sealed class ViscaCommandsTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => ViscaCommands.Home().ToPacket(address));
     }
+
+    [Theory]
+    [InlineData(Motion.Positive, 0x02)]
+    [InlineData(Motion.Negative, 0x03)]
+    [InlineData(Motion.None, 0x00)]
+    public void Focus_EncodesDirection(Motion direction, byte expected)
+    {
+        var command = ViscaCommands.Focus(direction);
+
+        Assert.Equal(new byte[] { 0x81, 0x01, 0x04, 0x08, expected, 0xFF }, command.ToPacket(1));
+        Assert.Equal("Focus", command.ToString());
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(255)]
+    public void Memory_RejectsSlotsOutOfRange(int slot)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => ViscaCommands.MemorySet(slot));
+    }
+
+    [Fact]
+    public void Commands_RequireANameAndPayload()
+    {
+        Assert.Throws<ArgumentNullException>(() => ViscaCommands.Raw(null!));
+        Assert.Throws<ArgumentException>(() => new ViscaCommand(" ", new byte[] { 0x01 }));
+        Assert.Throws<ArgumentException>(() => new ViscaCommand("Empty", new byte[0]));
+    }
 }

@@ -77,4 +77,58 @@ public sealed class XmlFileStoreTests : IDisposable
         Assert.Empty(loaded.Items);
         Assert.True(File.Exists(path + ".corrupt"));
     }
+
+    [Fact]
+    public void Load_UnreadableFileStartsWithDefaults()
+    {
+        // A folder where the file should be cannot be read, like a locked file.
+        var path = Directory.CreateDirectory(Path.Combine(folder, "settings.xml")).FullName;
+
+        var loaded = new XmlFileStore<AppSettings>(path).Load();
+
+        Assert.Equal(0.5, loaded.Speed);
+    }
+
+    [Fact]
+    public void Load_CorruptFileStillLoadsWhenItCannotBeKeptAside()
+    {
+        Directory.CreateDirectory(folder);
+        var path = Path.Combine(folder, "presets.xml");
+        File.WriteAllText(path, "<not xml");
+        Directory.CreateDirectory(path + ".corrupt");
+
+        var loaded = new XmlFileStore<PresetBook>(path).Load();
+
+        Assert.Empty(loaded.Items);
+    }
+
+    [Fact]
+    public void Save_CreatesTheFolder()
+    {
+        var path = Path.Combine(folder, "nested", "settings.xml");
+
+        new XmlFileStore<AppSettings>(path).Save(new AppSettings { Speed = 0.2 });
+
+        Assert.Equal(0.2, new XmlFileStore<AppSettings>(path).Load().Speed);
+    }
+
+    [Fact]
+    public void Language_DefaultsToFrenchInOlderFiles()
+    {
+        Directory.CreateDirectory(folder);
+        var path = Path.Combine(folder, "settings.xml");
+        File.WriteAllText(path, "<?xml version=\"1.0\" encoding=\"utf-8\"?><AppSettings><Speed>0.3</Speed></AppSettings>");
+
+        var loaded = new XmlFileStore<AppSettings>(path).Load();
+
+        Assert.Equal(AppLanguage.French, loaded.Language);
+        Assert.Equal(0.3, loaded.Speed);
+    }
+
+    [Fact]
+    public void Guards_RejectMissingArguments()
+    {
+        Assert.Throws<ArgumentException>(() => new XmlFileStore<AppSettings>(" "));
+        Assert.Throws<ArgumentNullException>(() => new XmlFileStore<AppSettings>(Path.Combine(folder, "s.xml")).Save(null!));
+    }
 }

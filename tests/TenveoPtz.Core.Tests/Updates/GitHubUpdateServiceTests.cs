@@ -122,6 +122,22 @@ public sealed class GitHubUpdateServiceTests : IDisposable
     public void ParseTag_ReadsVersions(string tag, int major, int minor, int build, int revision) =>
         Assert.Equal(new Version(major, minor, build, revision), GitHubUpdateService.ParseTag(tag));
 
+    [Theory]
+    [InlineData("\"draft\": false", "\"draft\": true")]
+    [InlineData("\"prerelease\": false", "\"prerelease\": true")]
+    public async Task FindUpdate_IgnoresDraftsAndPrereleases(string published, string unpublished)
+    {
+        handler.Json(LatestUrl, Release("v0.3.0.50").Replace(published, unpublished));
+
+        Assert.Null(await Service("0.2.0.41").FindUpdateAsync());
+    }
+
+    [Fact]
+    public async Task Install_RequiresARelease()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => Service("0.2.0.41").InstallAsync(null!));
+    }
+
     private GitHubUpdateService Service(string version, ReleasePlatform platform = ReleasePlatform.Windows) =>
         new(http, "owner/repo", Version.Parse(version), new UpdateInstaller(app, "TenveoPTZ.exe"), platform);
 

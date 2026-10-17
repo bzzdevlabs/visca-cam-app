@@ -30,4 +30,10 @@ public sealed class HexBytesTests
     {
         Assert.Null(HexBytes.TryParse(text));
     }
+
+    [Fact]
+    public void Format_RequiresBytes()
+    {
+        Assert.Throws<System.ArgumentNullException>(() => HexBytes.Format(null!));
+    }
 }

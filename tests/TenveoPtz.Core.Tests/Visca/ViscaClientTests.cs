@@ -89,4 +89,43 @@ public sealed class ViscaClientTests
 
         Assert.True(transport.Disposed);
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(8)]
+    public void Constructor_RejectsInvalidAddress(int address)
+    {
+        Assert.Throws<System.ArgumentOutOfRangeException>(() => new ViscaClient(transport, address));
+    }
+
+    [Fact]
+    public void Send_RequiresACommand()
+    {
+        Assert.Throws<System.ArgumentNullException>(() => new ViscaClient(transport, 1).Send(null!));
+    }
+
+    [Fact]
+    public void Send_SkipsGarbageBeforeTheReply()
+    {
+        // A long run of bytes without terminator is line noise: the reply after it is still read.
+        transport.QueueReply(Enumerable.Repeat((byte)0x55, 40).ToArray());
+        transport.QueueReply(0x90, 0x41, 0xFF, 0x90, 0x51, 0xFF);
+
+        Assert.True(new ViscaClient(transport, 1).Execute(ViscaCommands.Home()));
+    }
+
+    [Theory]
+    [InlineData(0x01, "message length error")]
+    [InlineData(0x03, "command buffer full")]
+    [InlineData(0x04, "command cancelled")]
+    [InlineData(0x05, "no socket")]
+    [InlineData(0x41, "command not executable")]
+    [InlineData(0x7F, "camera error")]
+    public void Errors_AreDescribed(byte code, string description)
+    {
+        var error = new ViscaException("Home", code);
+
+        Assert.Equal($"Home: {description} (VISCA error 0x{code:X2})", error.Message);
+        Assert.Equal("Home", error.CommandName);
+    }
 }

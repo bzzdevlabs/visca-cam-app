@@ -89,6 +89,32 @@ public sealed class LogHubTests
         Logger.Null.Error("ignored", new InvalidOperationException());
     }
 
+    [Fact]
+    public void Constructor_RejectsAnEmptyCapacity()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new LogHub(LogLevel.Info, 0));
+    }
+
+    [Fact]
+    public void Write_IgnoresNullEntries()
+    {
+        var hub = new LogHub(LogLevel.Debug, 5);
+
+        hub.Write(null!);
+
+        Assert.Empty(hub.Recent());
+        Assert.Equal(LogLevel.Debug, hub.MinimumLevel);
+    }
+
+    [Fact]
+    public void NullLogger_WritesNowhere()
+    {
+        Logger.Null.Info("ignored");
+        Logger.Null.For("Other").Warning("ignored");
+
+        Assert.False(Logger.Null.IsDebugEnabled);
+    }
+
     private sealed class ListSink : ILogSink
     {
         public List<LogEntry> Entries { get; } = new();
