@@ -26,7 +26,10 @@ internal sealed class FakeCameraAxes : ICameraAxes
 
     public int? GetValue(CameraAxis axis) => Values.TryGetValue(axis, out var value) ? value : null;
 
-    public void SetValue(CameraAxis axis, int value) => Values[axis] = value;
+    /// <summary>Thrown when an axis is moved, e.g. the camera was unplugged.</summary>
+    public System.Exception? FailWith { get; set; }
+
+    public void SetValue(CameraAxis axis, int value) => Values[axis] = FailWith is null ? value : throw FailWith;
 
     public void SetAutomatic(CameraAxis axis, bool enabled) => Automatic[axis] = enabled;
 

@@ -16,6 +16,13 @@ dotnet build --configuration Release
 dotnet test --configuration Release
 ```
 
+To see the coverage the CI checks (at least 90 % of the lines of `TenveoPtz.Core`):
+
+```bash
+dotnet test --configuration Release --collect:"XPlat Code Coverage" --results-directory coverage
+pwsh build/coverage-check.ps1 -Path coverage
+```
+
 The Windows app is written to `src/TenveoPtz.App/bin/Release/net48/TenveoPTZ.exe`.
 
 ## Simulated camera

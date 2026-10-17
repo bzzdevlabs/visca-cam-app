@@ -59,12 +59,17 @@ jobs:
 
       - name: Test
         id: test
-        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=tests.trx" --results-directory dist/test-results
+        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=tests.trx" --results-directory dist/test-results --collect:"XPlat Code Coverage"
 
       - name: Report test results
         if: always() && (steps.test.outcome == 'success' || steps.test.outcome == 'failure')
         shell: pwsh
         run: ./build/test-summary.ps1 -Path dist/test-results >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Check test coverage (at least 90 % of the lines of TenveoPtz.Core)
+        if: steps.test.outcome == 'success'
+        shell: pwsh
+        run: ./build/coverage-check.ps1 -Path dist/test-results -Minimum 90 >> $env:GITHUB_STEP_SUMMARY
 
       - name: Smoke test (start the app in light and dark themes)
         shell: pwsh

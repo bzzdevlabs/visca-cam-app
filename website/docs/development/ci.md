@@ -11,8 +11,14 @@ All workflows run on GitHub-hosted runners, which are free for public repositori
 
 `ci.yml` builds, unit-tests and smoke-tests every pull request:
 
-- **Windows**: the app is started in the light and dark themes, the update from the latest
-  release is tested, and the `.msi` is installed and uninstalled.
+- **Unit tests** of `TenveoPtz.Core` (presenter, VISCA and UVC control, presets, settings,
+  updates, translations, end-to-end scenarios on the simulated camera). The CI fails when they
+  cover less than **90 %** of its lines; the run page shows the coverage and the least covered
+  files.
+- **Windows**: the app is started in French (light theme) and in English (dark theme), the
+  update from the latest release is tested, the real app is driven on the simulated camera
+  (arrow, zoom, Shift and Home keys, presets, the settings panel, the numeric keypad while
+  another app is in front), and the `.msi` is installed and uninstalled.
 - **macOS**: the app is started in the light theme as Apple silicon code and in the dark theme
   as Intel code, through Rosetta.
 

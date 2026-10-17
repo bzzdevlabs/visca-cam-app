@@ -89,4 +89,29 @@ public sealed class ViscaPtzControllerTests
         Assert.True(executor.Disposed);
         Assert.True(transport.Disposed);
     }
+
+    [Fact]
+    public void Focus_AndAutoFocus_SendTheirCommands()
+    {
+        controller.Focus(Motion.Negative);
+        controller.SetAutoFocus(true);
+
+        Assert.Equal(new byte[] { 0x81, 0x01, 0x04, 0x08, 0x03, 0xFF }, transport.Written[0]);
+        Assert.Equal(new byte[] { 0x81, 0x01, 0x04, 0x38, 0x02, 0xFF }, transport.Written[1]);
+    }
+
+    [Fact]
+    public void Faulted_CanBeUnsubscribed()
+    {
+        var calls = 0;
+        System.EventHandler<ErrorEventArgs> handler = (_, _) => calls++;
+        controller.Faulted += handler;
+        controller.Faulted -= handler;
+
+        transport.QueueReply(0x90, 0x60, 0x02, 0xFF);
+        controller.Home();
+
+        Assert.Equal(0, calls);
+        Assert.Equal("VISCA on COM3", controller.Description);
+    }
 }

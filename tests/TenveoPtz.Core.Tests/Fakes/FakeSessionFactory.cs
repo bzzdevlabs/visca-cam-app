@@ -6,7 +6,8 @@ namespace TenveoPtz.Core.Tests.Fakes;
 
 internal sealed class FakeSessionFactory : ICameraSessionFactory
 {
-    public RecordingPtzController Ptz { get; } = new();
+    /// <summary>Controller of the opened sessions; a <see cref="RawRecordingPtzController"/> acts like VISCA.</summary>
+    public RecordingPtzController Ptz { get; set; } = new();
 
     public Exception? FailWith { get; set; }
 

@@ -74,4 +74,14 @@ public sealed class PresetBookTests
         Assert.Null(book.At(1));
         Assert.Null(book.At(-1));
     }
+
+    [Fact]
+    public void Changes_RejectPresetsFromAnotherList()
+    {
+        var book = new PresetBook();
+        var stranger = new PresetBook().Add("Elsewhere");
+
+        Assert.Throws<ArgumentException>(() => book.Rename(stranger, "Mine"));
+        Assert.Throws<ArgumentException>(() => book.Move(stranger, 1));
+    }
 }

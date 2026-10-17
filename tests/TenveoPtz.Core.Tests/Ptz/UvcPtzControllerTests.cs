@@ -247,4 +247,59 @@ public sealed class UvcPtzControllerTests
     }
 
     private UvcPtzController Continuous() => new(axes, new ManualTicker(), useContinuousMoves: true);
+
+    [Fact]
+    public void Focus_WithoutAFocusAxisSaysSo()
+    {
+        var error = Assert.Throws<NotSupportedException>(() => controller.Focus(Motion.Positive));
+
+        Assert.Equal("This camera does not expose focus control over USB.", error.Message);
+    }
+
+    [Fact]
+    public void Focus_MovesTheFocusAxis()
+    {
+        axes.Ranges[CameraAxis.Focus] = new AxisRange(0, 100, 1, 50);
+        axes.Values[CameraAxis.Focus] = 50;
+
+        controller.Focus(Motion.Positive);
+        for (var i = 0; i < 25; i++)
+        {
+            ticker.Fire(); // Focus moves at a fixed, slow speed: one second of ticks.
+        }
+
+        Assert.True(axes.Values[CameraAxis.Focus] > 50);
+    }
+
+    [Fact]
+    public void AutoFocus_SwitchesTheCameraMode()
+    {
+        axes.Ranges[CameraAxis.Focus] = new AxisRange(0, 100, 1, 50);
+
+        controller.SetAutoFocus(false);
+
+        Assert.False(axes.Automatic[CameraAxis.Focus]);
+    }
+
+    [Fact]
+    public void ForgetPreset_LeavesTheCameraAlone()
+    {
+        controller.ForgetPreset(new Preset { Name = "Wide", Slot = 1 });
+
+        Assert.Empty(axes.Values);
+    }
+
+    [Fact]
+    public void CameraErrorDuringAMove_StopsAndIsReported()
+    {
+        Exception? reported = null;
+        controller.Faulted += (_, e) => reported = e.GetException();
+        controller.Move(Motion.Positive, Motion.None, 1.0);
+        axes.FailWith = new InvalidOperationException("unplugged");
+
+        ticker.Fire();
+
+        Assert.Equal("unplugged", reported?.Message);
+        Assert.False(ticker.IsRunning);
+    }
 }

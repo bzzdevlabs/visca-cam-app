@@ -81,4 +81,16 @@ public sealed class BackgroundCommandExecutorTests
 
         Assert.Throws<ObjectDisposedException>(() => executor.Post(() => { }));
     }
+
+    [Fact]
+    public void Post_RequiresACommandAndAnOpenExecutor()
+    {
+        var executor = new BackgroundCommandExecutor("test");
+        Assert.Throws<ArgumentNullException>(() => executor.Post(null!));
+
+        executor.Dispose();
+        executor.Dispose(); // A second dispose is harmless.
+
+        Assert.Throws<ObjectDisposedException>(() => executor.Post(() => { }));
+    }
 }
